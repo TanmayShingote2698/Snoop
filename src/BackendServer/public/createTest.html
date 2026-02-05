@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Test - Snoop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Bootstrap 4 -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="snoop-theme.css">
+</head>
+
+<body>
+  <div class="main-container">
+    <div class="text-center mb-5">
+      <h2 class="font-weight-bold">Create New Examination</h2>
+      <p class="text-dim">Static Test Creation Dashboard</p>
+    </div>
+
+    <div class="glass-card mb-5">
+      <div id="selector" class="text-center">
+        <h4 class="mb-4">Select Question Type</h4>
+        <div class="d-flex justify-content-center gap-3">
+          <button class="btn-snoop mr-3" id="mcq">
+            <i class="fas fa-list-check mr-2"></i> Multiple Choice (MCQ)
+          </button>
+          <button class="btn-snoop" id="subjective">
+            <i class="fas fa-align-left mr-2"></i> Subjective
+          </button>
+        </div>
+        <div id="enterquestion" class="mt-4"></div>
+      </div>
+
+      <!-- MCQ Form -->
+      <div id="mcqform" style="display: none" class="mt-4">
+        <div class="form-group">
+          <label>Question Statement</label>
+          <input required type="text" class="form-control" name="MCQquestion" id="mcqquestion"
+            placeholder="Enter Question">
+        </div>
+        <div class="row">
+          <div class="col-md-6 form-group">
+            <label>Option 1</label>
+            <input required type="text" class="form-control" name="op1" id="op1" placeholder="Option 1">
+          </div>
+          <div class="col-md-6 form-group">
+            <label>Option 2</label>
+            <input required type="text" class="form-control" name="op2" id="op2" placeholder="Option 2">
+          </div>
+          <div class="col-md-6 form-group">
+            <label>Option 3</label>
+            <input required type="text" class="form-control" name="op3" id="op3" placeholder="Option 3">
+          </div>
+          <div class="col-md-6 form-group">
+            <label>Option 4</label>
+            <input required type="text" class="form-control" name="op4" id="op4" placeholder="Option 4">
+          </div>
+        </div>
+        <div class="form-group w-50 mx-auto">
+          <label>Correct Option Number (1-4)</label>
+          <input required type="number" class="form-control text-center" name="answer" id="answer" min="1" max="4">
+        </div>
+        <div class="text-center">
+          <button class="btn-snoop mt-3" id="submitmcq">
+            Add Question <i class="fas fa-plus-circle ml-2"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Subjective Form -->
+      <div id="subform" style="display: none" class="mt-4">
+        <div class="form-group">
+          <label>Subjective Question Statement</label>
+          <textarea class="form-control" name="question" id="subquestion" rows="4"
+            placeholder="Enter Question"></textarea>
+        </div>
+        <div class="text-center">
+          <button class="btn-snoop mt-3" id="submitsub">
+            Add Question <i class="fas fa-plus-circle ml-2"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row justify-content-center">
+      <div class="col-md-4">
+        <button class="btn-snoop w-100 justify-content-center mb-3"
+          style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);" id="submittest">
+          Finalize & Submit Test <i class="fas fa-check-double ml-2"></i>
+        </button>
+        <button class="btn-snoop w-100 justify-content-center"
+          style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);" id="displayquesbtn">
+          Display Questions <i class="fas fa-eye ml-2"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="displayques" class="mt-5 glass-card" style="display: none;"></div>
+  </div>
+
+  <script>
+    document.getElementById("mcq").addEventListener("click", function () {
+      document.getElementById("mcqform").style.display = "block";
+      document.getElementById("subform").style.display = "none";
+      document.getElementById("displayques").style.display = "none";
+    });
+
+    document.getElementById("subjective").addEventListener("click", function () {
+      document.getElementById("subform").style.display = "block";
+      document.getElementById("mcqform").style.display = "none";
+      document.getElementById("displayques").style.display = "none";
+    });
+
+    let questions = [];
+
+    document.getElementById("submitmcq").addEventListener("click", function () {
+      let question = {};
+      question.type = "mcq";
+      question.question = document.getElementById("mcqquestion").value;
+      question.op1 = document.getElementById("op1").value;
+      question.op2 = document.getElementById("op2").value;
+      question.op3 = document.getElementById("op3").value;
+      question.op4 = document.getElementById("op4").value;
+      question.ans = document.getElementById("answer").value;
+      questions.push(question);
+      document.getElementById("mcqform").style.display = "none";
+      alert("MCQ Question Added!");
+    });
+
+    document.getElementById("submitsub").addEventListener("click", function () {
+      let question = {};
+      question.type = "subjective";
+      question.question = document.getElementById("subquestion").value;
+      questions.push(question);
+      document.getElementById("subform").style.display = "none";
+      alert("Subjective Question Added!");
+    });
+
+    function displayQuestionsFunction() {
+      if (questions.length === 0) {
+        alert("No questions added yet!");
+        return;
+      }
+      let questionsArr = `<h4 class="font-weight-bold mb-4">Current Questions:</h4>`;
+      for (let i = 0; i < questions.length; i++) {
+        if (questions[i].type === "mcq") {
+          questionsArr += `<div class="mb-4 p-3 rounded" style="background: rgba(255,255,255,0.03);">
+                <span class="badge badge-primary mb-2">Q${i + 1}: MCQ</span><br>
+                <p class="font-weight-bold mb-2">${questions[i].question}</p>
+                <div class="row small text-dim ml-2">
+                    <div class="col-md-6">1. ${questions[i].op1}</div>
+                    <div class="col-md-6">2. ${questions[i].op2}</div>
+                    <div class="col-md-6">3. ${questions[i].op3}</div>
+                    <div class="col-md-6">4. ${questions[i].op4}</div>
+                </div>
+                <p class="mt-2 text-primary small font-weight-bold">Answer: Option ${questions[i].ans}</p>
+            </div>`;
+        } else {
+          questionsArr += `<div class="mb-4 p-3 rounded" style="background: rgba(255,255,255,0.03);">
+                <span class="badge badge-secondary mb-2">Q${i + 1}: Subjective</span><br>
+                <p class="font-weight-bold">${questions[i].question}</p>
+            </div>`;
+        }
+      }
+      document.getElementById("displayques").style.display = "block";
+      document.getElementById("displayques").innerHTML = questionsArr;
+      document.getElementById("displayques").scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.getElementById("displayquesbtn").addEventListener("click", displayQuestionsFunction);
+    document.getElementById("submittest").addEventListener("click", function () {
+      alert("Static Submission: In a real environment, this data would be sent to the backend.");
+      displayQuestionsFunction();
+    });
+  </script>
+</body>
+
+</html>

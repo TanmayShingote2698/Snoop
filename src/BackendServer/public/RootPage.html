@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snoop - Smart Proctoring System</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="snoop-theme.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('success')) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: urlParams.get('success'),
+          background: 'var(--bg-dark)',
+          color: 'var(--text-main)',
+          confirmButtonColor: 'var(--primary)',
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
+      if (urlParams.has('error')) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: urlParams.get('error'),
+          background: 'var(--bg-dark)',
+          color: 'var(--text-main)',
+          confirmButtonColor: '#ef4444',
+          timer: 5000,
+          timerProgressBar: true
+        });
+      }
+
+      // Aggressive URL Cleanup
+      const url = new URL(window.location.href);
+      const params = new URLSearchParams(url.search);
+      if (params.has('success') || params.has('error')) {
+        params.delete('success');
+        params.delete('error');
+        const newUrl = url.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({ path: newUrl }, '', newUrl);
+      }
+    });
+
+    // Prevent pop-up on back button
+    window.onpageshow = function (event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    };
+  </script>
+</head>
+
+<body>
+  <div class="hero-container">
+    <h1 class="logo-text">SNOOP</h1>
+    <p class="tagline">Static Landing Page - Proctoring & Examination Management</p>
+
+    <div class="selection-grid">
+      <a href="/teacher/login" class="role-card">
+        <div class="icon-box">T</div>
+        <h2 class="role-title">Administrator</h2>
+        <p class="role-desc">Create examinations, manage students, and monitor proctoring sessions.</p>
+      </a>
+
+      <a href="/student/login" class="role-card">
+        <div class="icon-box">S</div>
+        <h2 class="role-title">Student</h2>
+        <p class="role-desc">Access your scheduled tests, view results, and complete assessments.</p>
+      </a>
+    </div>
+  </div>
+</body>
+
+</html>

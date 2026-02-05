@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="text-center mb-5">
+    <h2 class="font-weight-bold">Test ID: <span style="color: var(--primary);">
+        <%= testIDfromNode %>
+      </span></h2>
+    <p class="text-dim">Add questions to your assessment session.</p>
+  </div>
+
+  <div class="glass-card mb-5">
+    <div id="selector" class="text-center p-4">
+      <h4 class="mb-4">Select Question Type</h4>
+      <div class="d-flex justify-content-center gap-3">
+        <button class="btn-snoop mr-3" id="mcq">
+          <i class="fas fa-list-check mr-2"></i> MCQ
+        </button>
+        <button class="btn-snoop" id="subjective">
+          <i class="fas fa-align-left mr-2"></i> Subjective
+        </button>
+      </div>
+
+      <!-- MCQ Form -->
+      <form id="mcqform" style="display: none" action="/teacher/submitQues" method="POST" class="mt-4 text-left">
+        <input type="hidden" name="testID" value="<%= testIDfromNode %>">
+        <div class="form-group">
+          <label>Question Statement</label>
+          <input required type="text" class="form-control" name="question" placeholder="Enter MCQ question">
+        </div>
+        <div class="row">
+          <div class="col-md-6 form-group"><label>Option 1</label><input required type="text" class="form-control"
+              name="op1" placeholder="Option 1"></div>
+          <div class="col-md-6 form-group"><label>Option 2</label><input required type="text" class="form-control"
+              name="op2" placeholder="Option 2"></div>
+          <div class="col-md-6 form-group"><label>Option 3</label><input required type="text" class="form-control"
+              name="op3" placeholder="Option 3"></div>
+          <div class="col-md-6 form-group"><label>Option 4</label><input required type="text" class="form-control"
+              name="op4" placeholder="Option 4"></div>
+        </div>
+        <div class="form-group w-50">
+          <label>Correct Option Number (1-4)</label>
+          <input required type="number" class="form-control" name="answer" min="1" max="4">
+        </div>
+        <button type="submit" class="btn-snoop mt-3">
+          Submit MCQ Question <i class="fas fa-plus ml-2"></i>
+        </button>
+      </form>
+
+      <!-- Subjective Form -->
+      <form id="subform" style="display: none" action="/teacher/submitQues" method="POST" class="mt-4 text-left">
+        <input type="hidden" name="testID" value="<%= testIDfromNode %>">
+        <div class="form-group">
+          <label>Subjective Question Statement</label>
+          <textarea class="form-control" name="question" rows="3" placeholder="Enter subjective question"></textarea>
+        </div>
+        <button type="submit" class="btn-snoop mt-3">
+          Submit Subjective Question <i class="fas fa-plus ml-2"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="text-center">
+    <form action="/teacher/showTestAfterCreation" method="POST" class="d-inline">
+      <input type="hidden" name="testID" value="<%= testIDfromNode %>">
+      <button class="btn-snoop btn-lg px-5 py-3" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+        Finalize Test Management <i class="fas fa-check-double ml-2"></i>
+      </button>
+    </form>
+  </div>
+
+  <div id="arrayToNode"></div>
+
+  <% if (locals.questions && questions.length> 0) { %>
+    <div class="glass-card mb-5 p-4">
+      <h4 class="mb-4 border-bottom pb-2"><i class="fas fa-list mr-2"></i> Added Questions (<%= questions.length %>)
+      </h4>
+      <div class="added-questions-list">
+        <% questions.forEach((q, index)=> { %>
+          <div class="p-3 mb-3 rounded"
+            style="background: rgba(255,255,255,0.05); border-left: 4px solid var(--primary);">
+            <div class="d-flex justify-content-between">
+              <span class="font-weight-bold">Q<%= index + 1 %>: <%= q.question %></span>
+              <span class="badge badge-info">
+                <%= q.op1 ? 'MCQ' : 'Subjective' %>
+              </span>
+            </div>
+            <% if (q.op1) { %>
+              <div class="small text-dim mt-2">
+                1: <%= q.op1 %> | 2: <%= q.op2 %> | 3: <%= q.op3 %> | 4: <%= q.op4 %>
+                        <br>Correct: <%= q.answer %>
+              </div>
+              <% } %>
+          </div>
+          <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+      <div id="displayques"></div>
+      <script>
+        //   document
+        //     .getElementById("subform")
+        //     .addEventListener("submit", function (e) {
+        //       e.preventDefault();
+        //     });
+
+        //   document
+        //     .getElementById("mcqform")
+        //     .addEventListener("submit", function (e) {
+        //       e.preventDefault();
+        //     });
+        document.getElementById("mcq").addEventListener("click", function () {
+          //   document.getElementById("enterquestion").innerHTML = `
+          //   `;
+          document.getElementById("mcqform").style.display = "block";
+          document.getElementById("subform").style.display = "none";
+          document.getElementById("displayques").style.display = "none";
+        });
+
+        document
+          .getElementById("subjective")
+          .addEventListener("click", function () {
+            //   document.getElementById("enterquestion").innerHTML = `
+            //   `;
+            document.getElementById("subform").style.display = "block";
+            document.getElementById("mcqform").style.display = "none";
+            document.getElementById("displayques").style.display = "none";
+          });
+
+        let questions = [];
+        function submitQuestion(type) {
+          let question = {};
+          question.type = type;
+        }
+
+        document
+          .getElementById("submitmcq")
+          .addEventListener("click", function () {
+            let question = {};
+            question.type = "mcq";
+            question.question = document.getElementById("mcqquestion").value;
+            question.op1 = document.getElementById("op1").value;
+            question.op2 = document.getElementById("op2").value;
+            question.op3 = document.getElementById("op3").value;
+            question.op4 = document.getElementById("op4").value;
+            question.ans = document.getElementById("answer").value;
+            //   console.log(question.question);
+            questions.push(question);
+            document.getElementById("mcqform").style.display = "none";
+          });
+
+        document
+          .getElementById("submitsub")
+          .addEventListener("click", function () {
+            let question = {};
+            question.type = "subjective";
+            question.question = document.getElementById("subquestion").value;
+            //   console.log(question.question);
+            questions.push(question);
+            document.getElementById("subform").style.display = "none";
+          });
+
+        function displayQuestionsFunction(check) {
+          console.log(questions);
+          let questionsArr = ``;
+          for (let i = 0; i < questions.length; i++) {
+            if (questions[i].type === "mcq") {
+              questionsArr += `Question ${i + 1}: <br>`;
+              questionsArr += questions[i].question;
+              questionsArr += `<br>`;
+              questionsArr += `Options: <br>`;
+              questionsArr += questions[i].op1;
+              questionsArr += `<br>`;
+              questionsArr += questions[i].op2;
+              questionsArr += `<br>`;
+              questionsArr += questions[i].op3;
+              questionsArr += `<br>`;
+              questionsArr += questions[i].op4;
+              questionsArr += `<br>`;
+              questionsArr += `Answer: <br>`;
+              questionsArr += questions[i].ans;
+              questionsArr += `<br>`;
+            } else {
+              questionsArr += `Question: ${i + 1} <br>`;
+              questionsArr += questions[i].question;
+              questionsArr += `<br>`;
+            }
+          }
+          document.getElementById("displayques").style.display = "block";
+          document.getElementById("displayques").innerHTML = questionsArr;
+        }
+
+        document
+          .getElementById("displayquesbtn")
+          .addEventListener("click", displayQuestionsFunction);
+
+        document
+          .getElementById("submittest")
+          .addEventListener("click", function () {
+            document.getElementById("arrayToNode").innerHTML =
+              "<% questionsOnNode = " + questions + "%>";
+            displayQuestionsFunction();
+          });
+      </script>
+      <!-- <script src="createTest.js"></script> -->
+</body>
+
+</html>

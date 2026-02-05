@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrator Register - Snoop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Bootstrap 4 -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="snoop-theme.css">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('success')) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: urlParams.get('success'),
+          background: 'var(--bg-dark)',
+          color: 'var(--text-main)',
+          confirmButtonColor: 'var(--primary)',
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
+      if (urlParams.has('error')) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: urlParams.get('error'),
+          background: 'var(--bg-dark)',
+          color: 'var(--text-main)',
+          confirmButtonColor: '#ef4444',
+          timer: 5000,
+          timerProgressBar: true
+        });
+      }
+
+      // Aggressive URL Cleanup
+      const url = new URL(window.location.href);
+      const params = new URLSearchParams(url.search);
+      if (params.has('success') || params.has('error')) {
+        params.delete('success');
+        params.delete('error');
+        const newUrl = url.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({ path: newUrl }, '', newUrl);
+      }
+    });
+
+    // Prevent pop-up on back button
+    window.onpageshow = function (event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    };
+  </script>
+</head>
+
+<body>
+  <div class="main-container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="glass-card">
+          <div class="text-center mb-4">
+            <i class="fas fa-shield-alt fa-3x mb-3" style="color: var(--primary);"></i>
+            <h2 class="font-weight-bold">Admin Registration</h2>
+            <p class="text-dim">Static Administrator View</p>
+          </div>
+
+          <form action="/teacher/register" method="POST">
+            <div class="form-group">
+              <label><i class="fas fa-user mr-2"></i>Full Name</label>
+              <input name="name" type="text" class="form-control" placeholder="Enter Your Name" required>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-envelope mr-2"></i>Email Address</label>
+              <input name="email" type="email" class="form-control" placeholder="admin@snoop.com" required>
+            </div>
+            <div class="form-group mb-4">
+              <label><i class="fas fa-lock mr-2"></i>Password</label>
+              <input name="password" type="password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-snoop w-100 justify-content-center">
+              Register Now <i class="fas fa-user-check"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

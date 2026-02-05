@@ -1,0 +1,32 @@
+<div class="text-center mb-5">
+  <h2 class="font-weight-bold">Student Dashboard</h2>
+  <p class="text-dim">Welcome, <%= email %>
+  </p>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-4 mb-4">
+    <div class="glass-card h-100 d-flex flex-column align-items-center text-center">
+      <i class="fas fa-file-alt fa-3x mb-4" style="color: var(--primary);"></i>
+      <h4>View My Tests</h4>
+      <p class="text-dim mb-4">See available assessments and scheduled examinations.</p>
+      <form action="/student/showAllTests" method="POST" class="mt-auto w-100">
+        <input type="hidden" name="email" value="<%= email %>">
+        <button type="submit" class="btn-snoop w-100 justify-content-center">
+          Show All Tests <i class="fas fa-chevron-right"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-4">
+    <div class="glass-card h-100 d-flex flex-column align-items-center text-center">
+      <i class="fas fa-poll fa-3x mb-4" style="color: var(--secondary);"></i>
+      <h4>Quick Results</h4>
+      <p class="text-dim mb-4">Instantly view your performance and feedback from previous tests.</p>
+      <a href="/student/GetResultByEmail" class="btn-snoop w-100 justify-content-center mt-auto">
+        Check Results <i class="fas fa-chart-line"></i>
+      </a>
+    </div>
+  </div>
+</div>

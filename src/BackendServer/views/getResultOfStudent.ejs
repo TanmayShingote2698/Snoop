@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="glass-card text-center">
+                <i class="fas fa-search-location fa-3x mb-4" style="color: var(--secondary);"></i>
+                <h2 class="font-weight-bold mb-3">Check Your Results</h2>
+                <p class="text-dim mb-4">Enter your registered email address to retrieve your examination performance.
+                </p>
+
+                <form action="/student/GetResultByEmail" method="POST">
+                    <div class="form-group mb-4">
+                        <label class="d-block text-left"><i class="fas fa-envelope mr-2"></i>Registration Email</label>
+                        <input type="email" class="form-control" placeholder="name@example.com" name="email" required>
+                    </div>
+                    <button type="submit" class="btn-snoop w-100 justify-content-center">
+                        Retrieve Results <i class="fas fa-file-download ml-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

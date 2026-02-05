@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="text-center mb-5">
+    <h2 class="font-weight-bold">Available Examinations</h2>
+    <p class="text-dim">Select a test to begin your assessment.</p>
+  </div>
+
+  <div class="row">
+    <% for(let i=0 ; i < tests.length ; i++){ %>
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="glass-card h-100">
+          <div class="text-center mb-4">
+            <i class="fas fa-file-signature fa-2x mb-2" style="color: var(--primary);"></i>
+            <h5 class="font-weight-bold">Test ID: <%= tests[i].test_details.id %>
+            </h5>
+            <p class="text-dim small">Duration: <%= tests[i].test_details.testDuration %> Mins</p>
+          </div>
+
+          <form action="/student/takeTest" method="POST">
+            <input type="hidden" name="testID" value="<%= tests[i].test_details.id %>">
+            <input type="hidden" name="email" value="<%= email %>">
+            <button type="submit" class="btn-snoop w-100 justify-content-center">
+              Start Examination <i class="fas fa-play-circle ml-2"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      <% } %>
+  </div>
+</body>
+
+</html>

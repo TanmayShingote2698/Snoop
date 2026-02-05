@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snoop - Smart Proctoring</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Bootstrap 4 -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous" />
+
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --primary: #38bdf8;
+      --secondary: #818cf8;
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    .navbar-snoop {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .navbar-brand-snoop {
+      font-weight: 700;
+      font-size: 1.5rem;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+
+    .main-container {
+      padding: 3rem 1rem;
+      max-width: 1200px;
+      margin: auto;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: 1.25rem;
+      padding: 2rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-control {
+      background: rgba(15, 23, 42, 0.5) !important;
+      border: 1px solid var(--glass-border) !important;
+      color: var(--text-main) !important;
+      border-radius: 0.75rem !important;
+      padding: 0.75rem 1.25rem !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+      background: rgba(15, 23, 42, 0.8) !important;
+    }
+
+    .btn-snoop {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border: none;
+      color: white !important;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none !important;
+    }
+
+    .btn-snoop:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+      filter: brightness(1.1);
+      color: white !important;
+    }
+
+    label {
+      color: var(--text-dim);
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar-snoop d-flex justify-content-between align-items-center">
+    <a href="/" class="navbar-brand-snoop">SNOOP</a>
+    <div class="nav-links">
+      <a href="/" class="text-dim mr-3 small text-decoration-none">Home</a>
+    </div>
+  </nav>
+
+  <div class="main-container"><%- body %></div>
+
+  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+    integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+    integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+    integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+    crossorigin="anonymous"></script>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const successMsg = "<%= locals.success || '' %>";
+      const errorMsg = "<%= locals.error || '' %>";
+
+      if (successMsg) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: successMsg,
+          background: 'var(--bg-dark)',
+          color: 'var(--text-main)',
+          confirmButtonColor: 'var(--primary)',
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
+
+      if (errorMsg) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: errorMsg,
+          background: 'var(--bg-dark)',
+          color: 'var(--text-main)',
+          confirmButtonColor: '#ef4444',
+          timer: 5000,
+          timerProgressBar: true
+        });
+      }
+
+      // Aggressive URL Cleanup: Remove success/error but keep others
+      if (successMsg || errorMsg) {
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
+        let changed = false;
+
+        if (params.has('success')) { params.delete('success'); changed = true; }
+        if (params.has('error')) { params.delete('error'); changed = true; }
+
+        if (changed) {
+          const newUrl = url.pathname + (params.toString() ? '?' + params.toString() : '');
+          window.history.replaceState({ path: newUrl }, '', newUrl);
+        }
+      }
+    });
+
+    // Prevent pop-up on back button
+    window.onpageshow = function (event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    };
+  </script>
+</body>
+
+</html>

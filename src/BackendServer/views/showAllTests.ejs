@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="text-center mb-5">
+    <h2 class="font-weight-bold">Available Examinations</h2>
+    <p class="text-dim">Monitor and manage your active test sessions.</p>
+  </div>
+
+  <div class="row">
+    <% tests.forEach(function(test){ %>
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="glass-card h-100">
+          <div class="text-center mb-4">
+            <i class="fas fa-file-signature fa-2x mb-2" style="color: var(--primary);"></i>
+            <h5 class="font-weight-bold">Test ID: <%= test.id %>
+            </h5>
+          </div>
+
+          <form action="/teacher/showTestAfterCreation" method="POST">
+            <input type="hidden" name="testID" value="<%= test.id %>">
+            <button type="submit" class="btn-snoop w-100 justify-content-center">
+              View Details <i class="fas fa-external-link-alt ml-2"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      <% }) %>
+  </div>
+</body>
+
+</html>
