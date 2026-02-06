@@ -66,9 +66,30 @@ class GetAllTest(Resource):
 
         return result
 
+class DeleteTest(Resource):
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('test_id',type=str,required=True,help="This field cannot be left blank.")
+
+    def post(self):
+        print("Delete Test Called")
+        headers: {"Accept": "application/json","Content-type": "application/json",}
+        response = self.parser.parse_args()
+        print(f"Delete request with test_id: {response['test_id']}")
+        result = testFunc.deleteTest(response['test_id'])
+        
+        print(f"Delete operation result: {result}")
+        if result:
+            print(f"Successfully deleted test: {response['test_id']}")
+            return jsonify({'testDeletion':'Success', 'test_id': response['test_id']})
+        else:
+            print(f"Failed to delete test: {response['test_id']}")
+            return jsonify({'testDeletion':'Failed', 'test_id': response['test_id']}), 500
+
 api.add_resource(CreateTest, '/createTest')
 api.add_resource(GetTest, '/getTest')
 api.add_resource(GetAllTest, '/getAllTest')
+api.add_resource(DeleteTest, '/deleteTest')
 
 
 if __name__ == "__main__":

@@ -7,6 +7,8 @@
   <title>Snoop - Smart Proctoring System</title>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
       --primary: #00ff41;
@@ -17,6 +19,24 @@
       --text-dim: #a3a3a3;
       --glass-border: rgba(0, 255, 65, 0.2);
     }
+
+    /* Light Theme Variables */
+    body.light-theme {
+      --bg-dark: #f8fafc;
+      --bg-card: rgba(255, 255, 255, 0.7);
+      --primary: #16a34a;
+      --secondary: #14532d;
+      --text-main: #1e293b;
+      --text-dim: #64748b;
+      --glass-border: rgba(22, 163, 74, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: 'Poppins', sans-serif;
       background: linear-gradient(135deg, var(--bg-dark) 0%, #0a0a0a 100%);
@@ -27,6 +47,11 @@
       justify-content: center;
       margin: 0;
       overflow-x: hidden;
+      transition: background 0.3s ease;
+    }
+
+    body.light-theme {
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #e2e8f0 100%);
     }
 
     .hero-container {
@@ -151,10 +176,115 @@
         font-size: 1rem;
       }
     }
+
+    .back-button {
+      position: fixed;
+      top: 2rem;
+      left: 2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 2rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 255, 65, 0.3);
+      cursor: pointer;
+      border: none;
+    }
+
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 65, 0.5);
+    }
+
+    .back-button svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2.5;
+    }
+
+    @media (max-width: 640px) {
+      .back-button {
+        top: 1.5rem;
+        left: 1.5rem;
+        padding: 0.65rem 1.25rem;
+        font-size: 0.95rem;
+      }
+
+      .back-button svg {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    /* Theme Toggle Button */
+    .theme-toggle {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1.2rem;
+    }
+
+    .theme-toggle:hover {
+      background: var(--primary);
+      color: white;
+      transform: rotate(15deg);
+      box-shadow: 0 4px 15px rgba(0, 255, 65, 0.3);
+    }
+
+    body.light-theme .theme-toggle {
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      color: var(--text-main);
+    }
+
+    body.light-theme .theme-toggle:hover {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
+    }
+
+    @media (max-width: 640px) {
+      .theme-toggle {
+        top: 1.5rem;
+        right: 1.5rem;
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 
 <body>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Switch Theme">
+    <i class="fas fa-sun" id="theme-icon"></i>
+  </button>
+
+  <a href="/" class="back-button">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+  </a>
+
   <div class="hero-container">
     <h1 class="logo-text">SNOOP</h1>
     <p class="tagline">Next-Generation Proctoring & Examination Management</p>
@@ -187,6 +317,40 @@
       </a>
     </div>
   </div>
+
+  <script>
+    // Theme Switcher Logic
+    function toggleTheme() {
+      const body = document.body;
+      const icon = document.getElementById('theme-icon');
+      
+      body.classList.toggle('light-theme');
+      
+      if (body.classList.contains('light-theme')) {
+        localStorage.setItem('theme', 'light');
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+      } else {
+        localStorage.setItem('theme', 'dark');
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+      }
+    }
+
+    // Initialize Theme on Page Load
+    document.addEventListener("DOMContentLoaded", function () {
+      const savedTheme = localStorage.getItem('theme');
+      const icon = document.getElementById('theme-icon');
+      
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        if(icon) {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+      }
+    });
+  </script>
 </body>
 
 </html>

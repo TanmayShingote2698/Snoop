@@ -42,10 +42,21 @@ app.set("view engine", "ejs");
 
 // Middleware to expose flash messages from query params to EJS
 app.use((req, res, next) => {
-  res.locals.success = req.query.success || null;
-  res.locals.error = req.query.error || null;
+  // Check for flash messages in session first, then query params
+  res.locals.success = req.session.successMessage || req.query.success || null;
+  res.locals.error = req.session.errorMessage || req.query.error || null;
   res.locals.user = req.session.user || null; // Expose logged-in user to all views
   res.locals.upload = upload; // Expose upload middleware to routes
+  
+  // Clear flash messages after exposing them to prevent them from appearing on refresh
+  // express-session will auto-detect the change and save it
+  if (req.session.successMessage) {
+    delete req.session.successMessage;
+  }
+  if (req.session.errorMessage) {
+    delete req.session.errorMessage;
+  }
+  
   next();
 });
 

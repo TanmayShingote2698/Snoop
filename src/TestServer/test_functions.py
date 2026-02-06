@@ -30,4 +30,11 @@ class testFunction:
         result = self.db.runQuery(query)
         return result
 
+    def deleteTest(self, test_id):
+        """Delete a test by test_id"""
+        print(f"Attempting to delete test with ID: {test_id}")
+        result = self.db.deleteEntry("test", {"test_id": test_id})
+        print(f"Delete result: {result}")
+        return result
+
 
