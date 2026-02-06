@@ -28,9 +28,10 @@ class authFunctions:
             return False
 
     def addStudent(self,id,name,email,photoURL,password):
+        email = email.lower()
         # SECURITY FIX: Hash password with bcrypt before storing
         hashed_password = self.hash_password(password)
-        jsonData = {'student_id':id,
+        jsonData = {
                     'name':name,
                     'email':email,
                     'photo_url':photoURL,
@@ -40,9 +41,10 @@ class authFunctions:
         return self.db.insertEntry("student",jsonData)
 
     def addAdmin(self,id,name,email,password):
+        email = email.lower()
         # SECURITY FIX: Hash password with bcrypt before storing
         hashed_password = self.hash_password(password)
-        jsonData = {'admin_id':id,
+        jsonData = {
                     'name':name,
                     'email':email,
                     'password':hashed_password,
@@ -51,6 +53,7 @@ class authFunctions:
         return self.db.insertEntry("admin",jsonData)
 
     def verifyStudent(self,email,password):
+        email = email.lower()
         # SECURITY FIX: Using parameterized-style query (safer)
         # Note: Oracle NoSQL requires this format for queries
         query = f"select email,password from student where email='{email}'"
@@ -63,15 +66,24 @@ class authFunctions:
         return self.verify_password(password, studentData['password'])
 
     def verifyAdmin(self,email,password):
+        email = email.lower()
+        print(f"[AUTH] Verifying Admin: {email}")
+        
         # SECURITY FIX: Using parameterized-style query (safer)
         query = f"select email,password from admin where email='{email}'"
         adminData = self.db.runQuery(query)
+        
+        print(f"[AUTH] Query Result for {email}: {len(adminData)} records found")
+        
         if len(adminData)==0:
+            print("[AUTH] Admin not found")
             return False
         
         adminData=adminData[0]
         # SECURITY FIX: Compare using bcrypt instead of plain text
-        return self.verify_password(password, adminData['password'])
+        is_valid = self.verify_password(password, adminData['password'])
+        print(f"[AUTH] Password valid: {is_valid}")
+        return is_valid
 
     
     def validateStudent(self,student_id,photo_url):

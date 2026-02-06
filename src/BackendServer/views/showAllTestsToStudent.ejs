@@ -19,21 +19,77 @@
         <div class="glass-card h-100">
           <div class="text-center mb-4">
             <i class="fas fa-file-signature fa-2x mb-2" style="color: var(--primary);"></i>
-            <h5 class="font-weight-bold">Test ID: <%= tests[i].test_details.id %>
-            </h5>
+            <h5 class="font-weight-bold">Test ID: <%= tests[i].test_details.id %></h5>
             <p class="text-dim small">Duration: <%= tests[i].test_details.testDuration %> Mins</p>
           </div>
 
-          <form action="/student/takeTest" method="POST">
-            <input type="hidden" name="testID" value="<%= tests[i].test_details.id %>">
-            <input type="hidden" name="email" value="<%= email %>">
-            <button type="submit" class="btn-snoop w-100 justify-content-center">
-              Start Examination <i class="fas fa-play-circle ml-2"></i>
-            </button>
-          </form>
+          <!-- Button Triggers Modal -->
+          <button type="button" class="btn-snoop w-100 justify-content-center" 
+                  data-toggle="modal" data-target="#accessCodeModal" 
+                  data-testid="<%= tests[i].test_details.id %>">
+            Start Examination <i class="fas fa-play-circle ml-2"></i>
+          </button>
         </div>
       </div>
-      <% } %>
+    <% } %>
+  </div>
+
+  <!-- Access Code Modal -->
+  <div class="modal fade" id="accessCodeModal" tabindex="-1" role="dialog" aria-labelledby="accessCodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--glass-border); backdrop-filter: blur(20px);">
+        <div class="modal-header border-0">
+          <h5 class="modal-title font-weight-bold" id="accessCodeModalLabel" style="color: var(--text-main);">
+            <i class="fas fa-lock mr-2" style="color: var(--primary);"></i>Enter Access Code
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: var(--text-dim);">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <p class="text-dim small mb-4">Please enter the unique access code provided by your faculty to begin test <strong id="modalTestIDDisplay" style="color: var(--primary);"></strong>.</p>
+            
+            <form action="/student/takeTest" method="POST">
+                <input type="hidden" name="testID" id="modalTestID">
+                <input type="hidden" name="email" value="<%= email %>">
+                
+                <div class="form-group">
+                    <input type="password" name="accessCode" class="form-control" placeholder="Access Code (e.g., SECRET123)" required autofocus
+                           style="background: rgba(0,0,0,0.2) !important; color: var(--text-main) !important; font-size: 1.2rem; text-align: center; letter-spacing: 2px;">
+                </div>
+
+                <button type="submit" class="btn-snoop w-100 justify-content-center mt-3">
+                    Unlock & Begin <i class="fas fa-unlock ml-2"></i>
+                </button>
+            </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Script to pass Test ID to Modal
+    // Defer execution to ensure jQuery is loaded from layout.ejs
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof $ !== 'undefined') {
+            $('#accessCodeModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget); // Button that triggered the modal
+                var testID = button.data('testid'); // Extract info from data-* attributes
+                
+                var modal = $(this);
+                modal.find('#modalTestID').val(testID);
+                modal.find('#modalTestIDDisplay').text(testID);
+            });
+        } else {
+            console.error("jQuery not loaded!");
+        }
+    });
+  </script>
+  
+  <div class="text-center mt-4">
+    <button onclick="window.history.back()" class="btn-snoop btn-glass" >
+        <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+    </button>
   </div>
 </body>
 

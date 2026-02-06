@@ -3,14 +3,14 @@
     <div class="glass-card">
       <div class="text-center mb-4">
         <i class="fas fa-user-shield fa-3x mb-3" style="color: var(--primary);"></i>
-        <h2 class="font-weight-bold">Administrator Login</h2>
+        <h2 class="font-weight-bold">Faculty Login</h2>
         <p class="text-dim">Secure access for test management and proctoring.</p>
       </div>
 
       <form action="/teacher/login" method="POST">
         <div class="form-group">
           <label><i class="fas fa-envelope mr-2"></i>Email Address</label>
-          <input name="email" type="email" class="form-control" placeholder="admin@snoop.com" required>
+          <input name="email" type="email" class="form-control" placeholder="faculty@snoop.com" required>
           <small class="form-text text-muted">Authorized access only.</small>
         </div>
         <div class="form-group mb-4">
@@ -19,12 +19,12 @@
         </div>
 
         <button type="submit" class="btn-snoop w-100 justify-content-center">
-          Admin Sign In <i class="fas fa-shield-alt"></i>
+          Faculty Sign In <i class="fas fa-shield-alt"></i>
         </button>
       </form>
 
       <div class="text-center mt-4">
-        <p class="small text-dim">Need an admin account?
+        <p class="small text-dim">Need a faculty account?
           <a href="/teacher/register" style="color: var(--primary); font-weight: 600;">Register Here</a>
         </p>
       </div>

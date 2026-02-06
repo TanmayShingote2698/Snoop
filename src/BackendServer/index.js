@@ -3,6 +3,7 @@ const path = require("path");
 const expressLayouts = require("express-ejs-layouts");
 const multer = require("multer");
 const fs = require("fs");
+const session = require("express-session");
 
 const app = express();
 
@@ -27,6 +28,14 @@ const upload = multer({ storage: storage });
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // Support json bodies
 
+// Session Configuration
+app.use(session({
+  secret: 'snoop-secret-key-123', // Change this in production
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+}));
+
 //EJS
 app.use(expressLayouts);
 app.set("view engine", "ejs");
@@ -35,6 +44,7 @@ app.set("view engine", "ejs");
 app.use((req, res, next) => {
   res.locals.success = req.query.success || null;
   res.locals.error = req.query.error || null;
+  res.locals.user = req.session.user || null; // Expose logged-in user to all views
   res.locals.upload = upload; // Expose upload middleware to routes
   next();
 });
