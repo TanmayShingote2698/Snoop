@@ -1,0 +1,4 @@
+type,question,op1,op2,op3,op4,answer
+mcq,What is the capital of France?,London,Paris,Berlin,Madrid,2
+subjective,Explain the concept of photosynthesis.,,,,,
+mcq,Which planet is known as the Red Planet?,Mars,Venus,Jupiter,Saturn,1

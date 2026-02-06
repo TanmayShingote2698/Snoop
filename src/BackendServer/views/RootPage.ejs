@@ -4,180 +4,488 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snoop - Smart Proctoring System</title>
-  <!-- Google Fonts -->
+  <title>Snoop - Next-Gen Proctoring</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      color: #f8fafc;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0;
-      overflow-x: hidden;
+    :root {
+      --primary: #00ff41;
+      --secondary: #003b00;
+      --bg-dark: #050505;
+      --bg-start: #050505;
+      --bg-end: #0a0a0a;
+      --bg-card: rgba(20, 20, 20, 0.9);
+      --text-main: #e5e5e5;
+      --text-dim: #a3a3a3;
+      --text-grad-start: #fff;       /* New: White for Dark Mode */
+      --text-grad-end: #cbd5e1;      /* New: Light Gray for Dark Mode */
     }
 
-    .hero-container {
-      text-align: center;
-      max-width: 900px;
-      padding: 2rem;
-      animation: fadeIn 1s ease-out;
-    }
+    /* ... code omitted ... */
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .logo-text {
-      font-size: 4rem;
-      font-weight: 700;
-      background: linear-gradient(to right, #38bdf8, #818cf8);
+    .hero h1 {
+      font-size: 4.5rem;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(to bottom, var(--text-grad-start), var(--text-grad-end));
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 0.5rem;
+      animation: fadeInDown 1s ease-out;
+    }
+
+    /* ... code omitted ... */
+
+    /* Light Theme Variables */
+    body.light-theme {
+      --bg-dark: #f8fafc;
+      --bg-start: #f8fafc;
+      --bg-end: #e2e8f0;
+      --bg-card: rgba(255, 255, 255, 0.7);
+      --primary: #16a34a;
+      --secondary: #14532d;
+      --text-main: #1e293b;
+      --text-dim: #64748b;
+      --text-grad-start: #1e293b; /* New: Dark Slate for Light Mode */
+      --text-grad-end: #16a34a;   /* New: Green for Light Mode */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Education Floating Icons */
+    .floating-icon {
+      position: fixed;
+      z-index: -1;
+      opacity: 0.12;
+      color: var(--text-main);
+      pointer-events: none;
+      filter: drop-shadow(0 0 10px rgba(255,255,255,0.05));
+      animation: iconFloat 25s infinite ease-in-out alternate;
+    }
+
+   /* Set 1 */
+    .icon-1 { top: 15%; left: 8%; font-size: 4rem; animation-delay: 0s; transform: rotate(-15deg); }
+    .icon-2 { bottom: 20%; left: 12%; font-size: 6rem; animation-delay: -3s; transform: rotate(10deg); }
+    .icon-3 { top: 20%; right: 12%; font-size: 5rem; animation-delay: -7s; transform: rotate(5deg); }
+    .icon-4 { bottom: 15%; right: 8%; font-size: 4.5rem; animation-delay: -11s; transform: rotate(-10deg); }
+    
+    /* Set 2 */
+    .icon-5 { top: 10%; left: 50%; font-size: 5rem; animation-delay: -2s; transform: rotate(0deg); opacity: 0.08; }
+    .icon-6 { top: 50%; right: 5%; font-size: 4rem; animation-delay: -5s; transform: rotate(-20deg); }
+    .icon-7 { top: 60%; left: 5%; font-size: 4rem; animation-delay: -9s; transform: rotate(15deg); }
+    .icon-8 { bottom: 10%; left: 45%; font-size: 5.5rem; animation-delay: -13s; transform: rotate(30deg); }
+
+    /* Set 3 */
+    .icon-9 { top: 80%; right: 30%; font-size: 4rem; animation-delay: -4s; transform: rotate(10deg); }
+    .icon-10 { top: 40%; left: 25%; font-size: 5rem; animation-delay: -8s; transform: rotate(-5deg); }
+    .icon-11 { top: 30%; left: 80%; font-size: 4.5rem; animation-delay: -1s; transform: rotate(20deg); }
+    .icon-12 { bottom: 40%; left: 85%; font-size: 4rem; animation-delay: -6s; transform: rotate(-10deg); }
+
+    /* Set 4 (New) */
+    .icon-13 { top: 5%; left: 20%; font-size: 3rem; animation-delay: -5s; opacity: 0.07; }
+    .icon-14 { top: 5%; right: 20%; font-size: 3.5rem; animation-delay: -2s; opacity: 0.07; }
+    .icon-15 { bottom: 5%; left: 30%; font-size: 3rem; animation-delay: -8s; opacity: 0.07; }
+    .icon-16 { bottom: 5%; right: 30%; font-size: 3.5rem; animation-delay: -4s; opacity: 0.07; }
+    .icon-17 { top: 45%; left: 15%; font-size: 3rem; animation-delay: -9s; transform: rotate(45deg); }
+    .icon-18 { top: 55%; right: 15%; font-size: 3rem; animation-delay: -1s; transform: rotate(-45deg); }
+    
+    /* Set 5 (Tiny Fillers) */
+    .icon-19 { top: 25%; left: 40%; font-size: 2rem; opacity: 0.05; animation-delay: -3s; }
+    .icon-20 { top: 75%; left: 60%; font-size: 2.5rem; opacity: 0.05; animation-delay: -6s; }
+    .icon-21 { top: 35%; right: 40%; font-size: 2rem; opacity: 0.05; animation-delay: -2s; }
+    .icon-22 { bottom: 35%; right: 25%; font-size: 2.5rem; opacity: 0.05; animation-delay: -7s; }
+    .icon-23 { top: 15%; left: 5%; font-size: 2rem; opacity: 0.05; animation-delay: -4s; }
+    .icon-24 { bottom: 15%; right: 5%; font-size: 2rem; opacity: 0.05; animation-delay: -5s; }
+
+    /* Set 6 (More Variety) */
+    .icon-25 { top: 90%; left: 10%; font-size: 4rem; animation-delay: -10s; }
+    .icon-26 { top: 90%; right: 10%; font-size: 4rem; animation-delay: -11s; }
+    .icon-27 { top: 50%; left: 50%; font-size: 8rem; opacity: 0.03; animation-delay: -15s; } /* Center Giant */
+    .icon-28 { top: 10%; right: 45%; font-size: 3rem; animation-delay: -2s; }
+    .icon-29 { bottom: 45%; left: 5%; font-size: 3rem; animation-delay: -8s; }
+    .icon-30 { top: 30%; right: 5%; font-size: 3rem; animation-delay: -5s; }
+
+    /* Set 7 (Final Polish) */
+    .icon-31 { top: 65%; left: 20%; font-size: 2.5rem; opacity: 0.06; }
+    .icon-32 { top: 25%; right: 25%; font-size: 2.5rem; opacity: 0.06; }
+    .icon-33 { bottom: 25%; left: 35%; font-size: 2rem; opacity: 0.06; }
+    .icon-34 { top: 85%; left: 40%; font-size: 3rem; opacity: 0.06; }
+    .icon-35 { bottom: 80%; right: 35%; font-size: 3rem; opacity: 0.06; }
+
+    @keyframes iconFloat {
+      0% { transform: translateY(0) rotate(0deg); }
+      100% { transform: translateY(-30px) rotate(10deg); }
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1.5rem;
+      background: rgba(5, 5, 5, 0.02);
+      backdrop-filter: blur(5px);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .logo {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
       letter-spacing: -1px;
     }
 
-    .tagline {
-      font-size: 1.25rem;
-      color: #94a3b8;
-      margin-bottom: 3rem;
-      font-weight: 300;
-    }
-
-    .selection-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 2rem;
-      margin-top: 2rem;
-    }
-
-    .role-card {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 1.5rem;
-      padding: 2.5rem;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    .access-btn {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 2rem;
       text-decoration: none;
-      color: inherit;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+    }
+
+    .access-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 80vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      cursor: pointer;
-    }
-
-    .role-card:hover {
-      transform: translateY(-10px);
-      background: rgba(30, 41, 59, 0.9);
-      border-color: #38bdf8;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
-    }
-
-    .icon-box {
-      width: 64px;
-      height: 64px;
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(129, 140, 248, 0.1));
-      border-radius: 1rem;
-      display: flex;
-      align-items: center;
       justify-content: center;
+      text-align: center;
+      padding: 4rem 2rem;
+      position: relative;
+    }
+
+    .hero h1 {
+      font-size: 4.5rem;
+      line-height: 1.1;
       margin-bottom: 1.5rem;
-      color: #38bdf8;
-      font-size: 2rem;
+      background: linear-gradient(to bottom, var(--text-grad-start), var(--text-grad-end));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: fadeInDown 1s ease-out;
     }
 
-    .role-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      color: #f1f5f9;
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--text-dim);
+      max-width: 700px;
+      margin-bottom: 3rem;
+      animation: fadeInUp 1s ease-out 0.3s backwards;
     }
 
-    .role-desc {
-      font-size: 0.9rem;
-      color: #94a3b8;
-      line-height: 1.5;
+    /* Features Grid */
+    .features {
+      max-width: 1200px;
+      margin: 0 auto 5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      padding: 0 2rem;
+      animation: fadeIn 1.5s ease-out 0.5s backwards;
     }
 
-    .btn-glow {
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 1.5rem;
+      padding: 2rem;
+      transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
     }
 
-    .btn-glow::after {
+    .feature-card::before {
       content: '';
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(56, 189, 248, 0.1), transparent);
-      transform: rotate(45deg);
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, transparent, rgba(56, 189, 248, 0.03), transparent);
+      transform: translateX(-100%);
       transition: 0.5s;
     }
 
-    .role-card:hover .btn-glow::after {
-      left: 100%;
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
     }
 
-    @media (max-width: 640px) {
-      .logo-text {
-        font-size: 3rem;
-      }
+    .feature-card:hover::before {
+      transform: translateX(100%);
+    }
 
-      .tagline {
-        font-size: 1rem;
-      }
+    .icon-wrapper {
+      width: 50px;
+      height: 50px;
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      color: var(--primary);
+      font-size: 1.5rem;
+    }
+
+    .feature-title {
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .feature-desc {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Light Theme Variables */
+    body.light-theme {
+      --bg-dark: #f8fafc;
+      --bg-start: #f8fafc; /* White Start */
+      --bg-end: #e2e8f0;   /* Light Gray End */
+      --bg-card: rgba(255, 255, 255, 0.7);
+      --primary: #16a34a;
+      --secondary: #14532d;
+      --text-main: #1e293b;
+      --text-dim: #64748b;
+      --text-grad-start: #1e293b; /* Dark Slate */
+      --text-grad-end: #16a34a;   /* Primary Green */
+    }
+    
+    body.light-theme header {
+      background: rgba(242, 246, 249, 0.02);
+      backdrop-filter: blur(5px);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    body.light-theme .floating-icon {
+      color: #0f172a; /* Dark icons for light bg */
+      opacity: 0.08;
+    }
+
+    /* Theme Toggle Button */
+    .theme-toggle {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-right: 1rem;
+    }
+    
+    .theme-toggle:hover {
+      background: var(--primary);
+      color: white;
+      transform: rotate(15deg);
+    }
+    
+    body.light-theme .theme-toggle {
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      color: var(--text-main);
+    }
+
+    /* Footer Styles */
+    .snoop-footer {
+      text-align: center;
+      padding: 0.8rem;
+      margin-top: auto; /* Push to bottom using Flexbox */
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(5, 5, 5, 0.8);
+      backdrop-filter: blur(10px);
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    body.light-theme .snoop-footer {
+      background: #f2f6f9;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
     }
   </style>
 </head>
 
 <body>
-  <div class="hero-container">
-    <h1 class="logo-text">SNOOP</h1>
-    <p class="tagline">Next-Generation Proctoring & Examination Management</p>
+  <!-- Background Icons -->
+  <i class="fas fa-pen-nib floating-icon icon-1"></i>
+  <i class="fas fa-laptop-code floating-icon icon-2"></i>
+  <i class="fas fa-book-open floating-icon icon-3"></i>
+  <i class="fas fa-calculator floating-icon icon-4"></i>
+  <i class="fas fa-graduation-cap floating-icon icon-5"></i>
+  <i class="fas fa-shield-alt floating-icon icon-6"></i>
+  <i class="fas fa-clock floating-icon icon-7"></i>
+  <i class="fas fa-atom floating-icon icon-8"></i>
+  <i class="fas fa-globe floating-icon icon-9"></i>
+  <i class="fas fa-microscope floating-icon icon-10"></i>
+  <i class="fas fa-certificate floating-icon icon-11"></i>
+  <i class="fas fa-university floating-icon icon-12"></i>
+  
+  <i class="fas fa-brain floating-icon icon-13"></i>
+  <i class="fas fa-lightbulb floating-icon icon-14"></i>
+  <i class="fas fa-pencil-alt floating-icon icon-15"></i>
+  <i class="fas fa-search floating-icon icon-16"></i>
+  <i class="fas fa-code floating-icon icon-17"></i>
+  <i class="fas fa-database floating-icon icon-18"></i>
+  <i class="fas fa-file-alt floating-icon icon-19"></i>
+  <i class="fas fa-chart-pie floating-icon icon-20"></i>
+  <i class="fas fa-video floating-icon icon-21"></i>
+  <i class="fas fa-id-card floating-icon icon-22"></i>
+  <i class="fas fa-keyboard floating-icon icon-23"></i>
+  <i class="fas fa-mouse floating-icon icon-24"></i>
+  <i class="fas fa-layer-group floating-icon icon-25"></i>
+  <i class="fas fa-network-wired floating-icon icon-26"></i>
+  <i class="fas fa-fingerprint floating-icon icon-27"></i>
+  <i class="fas fa-eye floating-icon icon-28"></i>
+  <i class="fas fa-lock floating-icon icon-29"></i>
+  <i class="fas fa-user-graduate floating-icon icon-30"></i>
+  <i class="fas fa-server floating-icon icon-31"></i>
+  <i class="fas fa-wifi floating-icon icon-32"></i>
+  <i class="fas fa-robot floating-icon icon-33"></i>
+  <i class="fas fa-medal floating-icon icon-34"></i>
+  <i class="fas fa-chalkboard-teacher floating-icon icon-35"></i>
 
-    <div class="selection-grid">
-      <a href="/teacher/login" class="role-card btn-glow">
-        <div class="icon-box">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-        </div>
-        <h2 class="role-title">Administrator</h2>
-        <p class="role-desc">Create examinations, manage students, and monitor proctoring sessions in real-time.</p>
-      </a>
-
-      <a href="/student/login" class="role-card btn-glow">
-        <div class="icon-box">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-            <path d="M6 12v5c3 3 9 3 12 0v-5" />
-          </svg>
-        </div>
-        <h2 class="role-title">Student</h2>
-        <p class="role-desc">Access your scheduled tests, view results, and complete assessments securely.</p>
-      </a>
+  <header>
+    <div style="display: flex; align-items: center;">
+        <div class="logo">SNOOP</div>
     </div>
-  </div>
-</body>
+    <div style="display: flex; align-items: center;">
+         <!-- Theme Switcher -->
+         <button class="theme-toggle" onclick="toggleTheme()" title="Switch Theme">
+            <i class="fas fa-sun" id="theme-icon"></i>
+         </button>
+        <a href="/AccessPortal" class="access-btn">Access Portal <i class="fas fa-arrow-right ml-2"></i></a>
+    </div>
+  </header>
 
+  <section class="hero">
+    <h1>The Future of<br>Secure Examination</h1>
+    <p>A multimodal AI-based online invigilation platform that monitors students in real time using webcam frames, audio signals, and browser activity.</p>
+  </section>
+
+  <section class="features">
+    <div class="feature-card">
+      <div class="icon-wrapper"><i class="fas fa-user-check"></i></div>
+      <h3 class="feature-title">Face Detection</h3>
+      <p class="feature-desc">Advanced biometrics to identify the presence of a candidate and strictly detect multiple faces in the frame.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="icon-wrapper"><i class="fas fa-eye"></i></div>
+      <h3 class="feature-title">Gaze Tracking</h3>
+      <p class="feature-desc">Real-time eye direction monitoring to ensure focus remains on the screen, flagging suspicious off-screen glances.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="icon-wrapper"><i class="fas fa-mobile-alt"></i></div>
+      <h3 class="feature-title">Mobile Phone Detection</h3>
+      <p class="feature-desc">Powered by YOLO models to instantly identify and flag mobile devices visible in the camera frame.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="icon-wrapper"><i class="fas fa-microphone-slash"></i></div>
+      <h3 class="feature-title">Audio Anomaly Detection</h3>
+      <p class="feature-desc">Sophisticated audio analysis to detect background voices, whispers, and other suspicious sonic activities.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="icon-wrapper"><i class="fas fa-window-restore"></i></div>
+      <h3 class="feature-title">Browser Event Monitoring</h3>
+      <p class="feature-desc">Tracks unauthorized tab switches, window minimization, and keyboard shortcuts to prevent external help.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="icon-wrapper"><i class="fas fa-chart-line"></i></div>
+      <h3 class="feature-title">Cheat Score Engine</h3>
+      <p class="feature-desc">Generates a dynamic real-time risk score based on aggregated anomalies, giving proctors actionable insights.</p>
+    </div>
+  </section>
+
+
+  <footer class="snoop-footer">
+    &copy; 2026 Snoop. All Rights Reserved under <strong>TOMS</strong>.
+  </footer>
+
+  <script>
+    // Theme Switcher Logic (Replicated)
+    function toggleTheme() {
+      const body = document.body;
+      const icon = document.getElementById('theme-icon');
+      
+      body.classList.toggle('light-theme');
+      
+      if (body.classList.contains('light-theme')) {
+        localStorage.setItem('theme', 'light');
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+      } else {
+        localStorage.setItem('theme', 'dark');
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+      }
+    }
+
+    // Initialize Theme
+    document.addEventListener("DOMContentLoaded", function () {
+      const savedTheme = localStorage.getItem('theme');
+      const icon = document.getElementById('theme-icon');
+      
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        if(icon) {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+      }
+    });
+  </script>
+</body>
 </html>

@@ -2,6 +2,7 @@ const express = require("express");
 var request = require('request');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const { checkAuthenticated, checkNotAuthenticated } = require('../middleware/auth');
 const multer = require("multer");
 const path = require("path");
 const SALT_ROUNDS = 12;
@@ -31,12 +32,12 @@ let studentCred = [];
 // }
 let resultArr = [];
 
-router.get("/login", (req, res) => {
+router.get("/login", checkNotAuthenticated, (req, res) => {
   res.render("studentLogin");
   // res.sendFile(`${publicDirPath}/studentLogin.html`);
 });
 
-router.get("/register", (req, res) => {
+router.get("/register", checkNotAuthenticated, (req, res) => {
   res.render("studentRegister");
   // res.sendFile(`${publicDirPath}/studentRegister.html`);
 });
@@ -44,7 +45,7 @@ router.get("/register", (req, res) => {
 router.post("/login", async (req, res) => {
   let found = -1;
 
-  let inputEmail = req.body.email;
+  let inputEmail = req.body.email.toLowerCase();
   let inputPassword = req.body.password;
   // SECURITY FIX: Password sent to server for bcrypt comparison (no more MD5)
 
@@ -71,6 +72,13 @@ router.post("/login", async (req, res) => {
       return res.redirect("/student/login?error=" + encodeURIComponent("Invalid Email or Password. Please try again."));
     }
 
+    // Set Session
+    req.session.user = {
+      role: 'student',
+      email: inputEmail,
+      name: inputEmail.split('@')[0] // Fallback name
+    };
+
     res.redirect("/student/home?email=" + encodeURIComponent(req.body.email) + "&success=" + encodeURIComponent(`Welcome back, ${req.body.email.split('@')[0]}!`));
 
   });
@@ -85,7 +93,7 @@ router.get("/tp", (req, res) => {
 router.post("/register", upload.single('photo'), async (req, res) => {
   let found = false;
 
-  let inputEmail = req.body.email;
+  let inputEmail = req.body.email.toLowerCase();
   let inputName = req.body.name;
   let inputPassword = req.body.password;
   // SECURITY FIX: Password sent to server for bcrypt hashing (no more MD5)
@@ -124,16 +132,14 @@ router.get("/showStudents", (req, res) => {
 });
 
 // Student Home
-router.get("/home", (req, res) => {
-  const email = req.query.email || "";
-  if (!email) {
-    return res.redirect("/student/login?error=" + encodeURIComponent("Please log in to access the dashboard."));
-  }
-  res.render("studentHome", { email });
+router.get("/home", checkAuthenticated, (req, res) => {
+  // Use session email if query param is missing (security hardening)
+  const email = req.session.user.email;
+  res.render("studentHome", { email, hideHome: true });
 });
 
 // Show all tests to student
-router.post("/showAllTests", (req, res) => {
+router.post("/showAllTests", checkAuthenticated, (req, res) => {
   const options = {
     url: 'http://127.0.0.1:100/' + 'getAllTest'
   };
@@ -147,18 +153,19 @@ router.post("/showAllTests", (req, res) => {
     console.log(body);
     console.log(body.length);
 
-    for (let i = 0; i < body.length; i++) {
 
-      console.log(body[i]['test_id']);
-      console.log("--------------------------");
-    }
-    tests = body;
-    console.log("Tests Before!:")
-    console.log(tests)
-    console.log(req.body)
+    
+    // Fix: Update existing array in-place instead of reassignment
+    tests.length = 0;
+    body.forEach(t => tests.push(t));
+    
+    console.log("Tests Synced! Count:", tests.length);
+    console.log("Shared Memory Updated.");
+    
     res.render("showAllTestsToStudent", {
       tests,
-      email: req.body.email
+      email: req.body.email,
+      hideHome: true
     });
   });
 
@@ -167,35 +174,109 @@ router.post("/showAllTests", (req, res) => {
 });
 
 // Give Test
-router.post("/takeTest", (req, res) => {
-  console.log("Avail Tests")
-  console.log(tests)
-  let testID = req.body.testID;
-  let test = {};
-  for (let i = 0; i < tests.length; i++) {
-    if (tests[i].test_details.id === testID) {
-      test = tests[i].test_details;
-      break;
-    }
-  }
-  // let test = tests[ind].test_details;
+router.post("/takeTest", checkAuthenticated, (req, res) => {
+  // Always fetch the live tests array from the teacher module source of truth
+  const teacherModule = require("./teacher");
+  const liveTests = teacherModule.tests;
 
-  // console.log("Test ID Requested:");
-  // console.log(req.body.testID);
-  // for (let i = 0; i < tests.length; i++) {
-  //   if (parseInt(tests[i].id) === parseInt(req.body.testID)) {
-  //     test = tests[i];
-  //     break;
-  //   }
-  // }
-  // console.log("All Tests:")
-  // console.log(tests)
+  console.log(`\n--- TAKING TEST DEBUG ---`);
+  console.log(`Requested ID: '${req.body.testID}'`);
+  console.log(`Available Tests Count: ${liveTests.length}`);
+  
+  console.log("--- LIST OF AVAILABLE TESTS ---");
+  liveTests.forEach((t, index) => {
+    let tObj = t.test_details || t;
+    console.log(`[${index}] ID: '${tObj.id}' | Code: '${tObj.accessCode || 'N/A'}'`);
+  });
+  console.log("-------------------------------");
+
+  // Function to find test in a list
+  const findTest = (list, id) => {
+    for (let i = 0; i < list.length; i++) {
+        let t = list[i].test_details || list[i];
+        if (String(t.id).trim() === String(id).trim()) return t;
+    }
+    return null;
+  };
+
+  let testID = req.body.testID; // RESTORED LINE
+  test = findTest(liveTests, testID);
+
+  // If not found in memory, try fetching from DB (Resilience Update)
+  if (!test) {
+    console.log("Test not found in memory. Attempting to fetch from Database...");
+    return new Promise((resolve, reject) => {
+        const options = {
+            url: 'http://127.0.0.1:100/getAllTest',
+            json: true
+        };
+        request.post(options, (err, resp, body) => {
+            if (err) {
+                console.log("DB Fetch Error:", err);
+                return res.redirect("/student/home?error=" + encodeURIComponent("Error connecting to database."));
+            }
+            
+            if (body && Array.isArray(body)) {
+                // Update Shared Memory
+                liveTests.length = 0;
+                body.forEach(t => liveTests.push(t.test_details || t));
+                console.log(`Resynced ${liveTests.length} tests from DB.`);
+                
+                // Try finding again
+                test = findTest(liveTests, testID);
+                
+                if (!test) {
+                     return res.redirect("/student/home?error=" + encodeURIComponent("Test ID not found (even after DB sync)."));
+                }
+                
+                // Found after sync, proceed to verify access code
+                if (test.accessCode) {
+                    const serverCode = String(test.accessCode).trim();
+                    const userCode = String(req.body.accessCode || '').trim();
+                    if (serverCode !== userCode) {
+                        return res.redirect("/student/home?error=" + encodeURIComponent("Invalid Access Code."));
+                    }
+                }
+
+                res.render("takeTestByStudent", {
+                    test,
+                    email: req.body.email,
+                    hideHome: true
+                });
+
+            } else {
+                 return res.redirect("/student/home?error=" + encodeURIComponent("Database returned invalid data."));
+            }
+        });
+    });
+  } else {
+     console.log(`MATCH FOUND IN MEMORY: ${test.id}`);
+  }
+
   // console.log("Test is:")
   console.log(test)
   console.log(JSON.stringify(test));
+
+  if (!test || !test.id) {
+    return res.redirect("/student/home?error=" + encodeURIComponent("Test Search Failed: Test ID not found or invalid."));
+  }
+
+  // Access Code Verification
+  if (test.accessCode) {
+      const serverCode = String(test.accessCode).trim();
+      const userCode = String(req.body.accessCode || '').trim();
+      
+      console.log(`Verifying Access Code: TestID=${test.id}, Server='${serverCode}', User='${userCode}'`);
+
+      if (serverCode !== userCode) {
+          return res.redirect("/student/home?error=" + encodeURIComponent("Invalid Access Code. Please try again."));
+      }
+  }
+
   res.render("takeTestByStudent", {
     test,
-    email: req.body.email
+    email: req.body.email,
+    hideHome: true
   });
 
 });
@@ -205,8 +286,9 @@ router.post('/submitTest', (req, res) => {
   let testID = req.body.testID;
   let test = null;
   for (let i = 0; i < tests.length; i++) {
-    if (tests[i].test_details.id === testID) {
-      test = tests[i].test_details;
+    let currentTest = tests[i].test_details || tests[i];
+    if (currentTest.id === testID) {
+      test = currentTest;
       break;
     }
   }
@@ -262,7 +344,7 @@ router.post('/submitTest', (req, res) => {
 
 router.get('/GetResultByEmail', (req, res) => {
   const email = req.query.email || "";
-  res.render('getResultOfStudent', { email });
+  res.render('getResultOfStudent', { email, hideHome: true });
 })
 
 router.post('/GetResultByEmail', (req, res) => {
@@ -285,11 +367,19 @@ router.post('/GetResultByEmail', (req, res) => {
     console.log(body);
 
     res.render('showResultUsingEmail', {
-      results: body.result
+      results: body.result,
+      hideHome: true
     })
   });
 
 
 })
+
+router.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+      if (err) console.log(err);
+      res.redirect("/");
+  });
+});
 
 module.exports = router;

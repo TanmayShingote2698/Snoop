@@ -22,9 +22,46 @@
         <button class="btn-snoop mr-3" id="mcq">
           <i class="fas fa-list-check mr-2"></i> MCQ
         </button>
-        <button class="btn-snoop" id="subjective">
+        <button class="btn-snoop mr-3" id="subjective">
           <i class="fas fa-align-left mr-2"></i> Subjective
         </button>
+        <button class="btn-snoop" id="bulk">
+          <i class="fas fa-file-upload mr-2"></i> Bulk Upload
+        </button>
+      </div>
+
+      <!-- Bulk Upload Form -->
+      <div id="bulkform" style="display: none" class="mt-4 text-left">
+        <div class="alert alert-info" style="background: rgba(0, 123, 255, 0.1); border-color: rgba(0, 123, 255, 0.2); color: #9ec5fe;">
+          <h5 class="alert-heading"><i class="fas fa-info-circle mr-2"></i>Instructions for Bulk Upload</h5>
+          <p class="mb-2">Upload an Excel (.xlsx) or CSV file with the following columns (headers are required):</p>
+          <ul class="small mb-3">
+            <li><strong>type</strong>: 'mcq' or 'subjective' (required)</li>
+            <li><strong>question</strong>: The question text (required)</li>
+            <li><strong>op1, op2, op3, op4</strong>: Options for MCQ (required for type 'mcq')</li>
+            <li><strong>answer</strong>: Correct option number (1-4) for MCQ (required for type 'mcq')</li>
+          </ul>
+          <p class="mb-0 small"><em>Note: Subjective questions only need 'type' and 'question' columns.</em></p>
+          <div class="mt-3">
+            <a href="/sample_questions.csv" download class="btn-snoop btn-sm" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
+              <i class="fas fa-download mr-2"></i> Download Sample CSV
+            </a>
+          </div>
+        </div>
+
+        <form action="/teacher/uploadQuestions" method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="testID" value="<%= testIDfromNode %>">
+          <div class="form-group">
+             <label>Select File (CSV or Excel)</label>
+             <div class="custom-file">
+               <input type="file" class="custom-file-input" name="file" id="customFile" required accept=".csv, .xlsx, .xls">
+               <label class="custom-file-label" for="customFile" style="background: rgba(10, 10, 10, 0.8); color: var(--text-dim); border-color: var(--glass-border);">Choose file</label>
+             </div>
+          </div>
+          <button type="submit" class="btn-snoop mt-3">
+            Upload Questions <i class="fas fa-cloud-upload-alt ml-2"></i>
+          </button>
+        </form>
       </div>
 
       <!-- MCQ Form -->
@@ -67,14 +104,7 @@
     </div>
   </div>
 
-  <div class="text-center">
-    <form action="/teacher/showTestAfterCreation" method="POST" class="d-inline">
-      <input type="hidden" name="testID" value="<%= testIDfromNode %>">
-      <button class="btn-snoop btn-lg px-5 py-3" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-        Finalize Test Management <i class="fas fa-check-double ml-2"></i>
-      </button>
-    </form>
-  </div>
+
 
   <div id="arrayToNode"></div>
 
@@ -105,6 +135,18 @@
     <% } %>
 
       <div id="displayques"></div>
+
+  <div class="text-center d-flex justify-content-center gap-3 mt-5 mb-5">
+    <button onclick="window.history.back()" class="btn-snoop btn-glass mr-3">
+      <i class="fas fa-arrow-left mr-2"></i> Back
+    </button>
+    <form action="/teacher/showTestAfterCreation" method="POST" class="d-inline">
+      <input type="hidden" name="testID" value="<%= testIDfromNode %>">
+      <button class="btn-snoop btn-lg px-5 py-3" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+        Finalize Test Management <i class="fas fa-check-double ml-2"></i>
+      </button>
+    </form>
+  </div>
       <script>
         //   document
         //     .getElementById("subform")
@@ -122,6 +164,7 @@
           //   `;
           document.getElementById("mcqform").style.display = "block";
           document.getElementById("subform").style.display = "none";
+          document.getElementById("bulkform").style.display = "none";
           document.getElementById("displayques").style.display = "none";
         });
 
@@ -132,8 +175,23 @@
             //   `;
             document.getElementById("subform").style.display = "block";
             document.getElementById("mcqform").style.display = "none";
+            document.getElementById("bulkform").style.display = "none";
             document.getElementById("displayques").style.display = "none";
           });
+
+        document.getElementById("bulk").addEventListener("click", function () {
+            document.getElementById("bulkform").style.display = "block";
+            document.getElementById("mcqform").style.display = "none";
+            document.getElementById("subform").style.display = "none";
+            document.getElementById("displayques").style.display = "none";
+        });
+        
+        // Custom file input label update
+        document.querySelector('.custom-file-input').addEventListener('change', function(e) {
+            var fileName = document.getElementById("customFile").files[0].name;
+            var nextSibling = e.target.nextElementSibling
+            nextSibling.innerText = fileName
+        });
 
         let questions = [];
         function submitQuestion(type) {

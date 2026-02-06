@@ -41,7 +41,10 @@ class AddStudent(Resource):
                             response['photo_url'],
                             response['password'])
 
-        return jsonify({'userAdded':'Success'})
+        if result:
+            return jsonify({'userAdded':'Success'})
+        else:
+            return jsonify({'userAdded':'Fail', 'message': 'Database Error or Duplicate User'}), 400
 
 class AddAdmin(Resource):
     def __init__(self):
@@ -59,7 +62,10 @@ class AddAdmin(Resource):
                             response['email'],
                             response['password'])
 
-        return jsonify({'adminAdd':'Success'})
+        if result:
+            return jsonify({'adminAdd':'Success'})
+        else:
+            return jsonify({'adminAdd':'Fail', 'message': 'Database Error or Duplicate Admin'}), 400
 
 class verifyStudent(Resource):
     def __init__(self):
