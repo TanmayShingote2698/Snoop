@@ -154,14 +154,14 @@ router.post("/showAllTests", checkAuthenticated, (req, res) => {
     console.log(body.length);
 
 
-    
+
     // Fix: Update existing array in-place instead of reassignment
     tests.length = 0;
     body.forEach(t => tests.push(t));
-    
+
     console.log("Tests Synced! Count:", tests.length);
     console.log("Shared Memory Updated.");
-    
+
     res.render("showAllTestsToStudent", {
       tests,
       email: req.body.email,
@@ -175,6 +175,16 @@ router.post("/showAllTests", checkAuthenticated, (req, res) => {
 
 // Give Test
 router.post("/takeTest", checkAuthenticated, (req, res) => {
+  // AI Proctoring: Start Anomaly Server EARLIER (during DB/Sync processing)
+  const anomalyOptions = {
+    url: 'http://127.0.0.1:5001/start',
+    method: 'POST'
+  };
+  request.post(anomalyOptions, (err, resp, body) => {
+    if (err) console.log("Anomaly Server Early Trigger Error:", err.message);
+    else console.log("Anomaly Server Early Trigger Response:", body);
+  });
+
   // Always fetch the live tests array from the teacher module source of truth
   const teacherModule = require("./teacher");
   const liveTests = teacherModule.tests;
@@ -182,7 +192,7 @@ router.post("/takeTest", checkAuthenticated, (req, res) => {
   console.log(`\n--- TAKING TEST DEBUG ---`);
   console.log(`Requested ID: '${req.body.testID}'`);
   console.log(`Available Tests Count: ${liveTests.length}`);
-  
+
   console.log("--- LIST OF AVAILABLE TESTS ---");
   liveTests.forEach((t, index) => {
     let tObj = t.test_details || t;
@@ -193,8 +203,8 @@ router.post("/takeTest", checkAuthenticated, (req, res) => {
   // Function to find test in a list
   const findTest = (list, id) => {
     for (let i = 0; i < list.length; i++) {
-        let t = list[i].test_details || list[i];
-        if (String(t.id).trim() === String(id).trim()) return t;
+      let t = list[i].test_details || list[i];
+      if (String(t.id).trim() === String(id).trim()) return t;
     }
     return null;
   };
@@ -206,51 +216,51 @@ router.post("/takeTest", checkAuthenticated, (req, res) => {
   if (!test) {
     console.log("Test not found in memory. Attempting to fetch from Database...");
     return new Promise((resolve, reject) => {
-        const options = {
-            url: 'http://127.0.0.1:100/getAllTest',
-            json: true
-        };
-        request.post(options, (err, resp, body) => {
-            if (err) {
-                console.log("DB Fetch Error:", err);
-                return res.redirect("/student/home?error=" + encodeURIComponent("Error connecting to database."));
-            }
-            
-            if (body && Array.isArray(body)) {
-                // Update Shared Memory
-                liveTests.length = 0;
-                body.forEach(t => liveTests.push(t.test_details || t));
-                console.log(`Resynced ${liveTests.length} tests from DB.`);
-                
-                // Try finding again
-                test = findTest(liveTests, testID);
-                
-                if (!test) {
-                     return res.redirect("/student/home?error=" + encodeURIComponent("Test ID not found (even after DB sync)."));
-                }
-                
-                // Found after sync, proceed to verify access code
-                if (test.accessCode) {
-                    const serverCode = String(test.accessCode).trim();
-                    const userCode = String(req.body.accessCode || '').trim();
-                    if (serverCode !== userCode) {
-                        return res.redirect("/student/home?error=" + encodeURIComponent("Invalid Access Code."));
-                    }
-                }
+      const options = {
+        url: 'http://127.0.0.1:100/getAllTest',
+        json: true
+      };
+      request.post(options, (err, resp, body) => {
+        if (err) {
+          console.log("DB Fetch Error:", err);
+          return res.redirect("/student/home?error=" + encodeURIComponent("Error connecting to database."));
+        }
 
-                res.render("takeTestByStudent", {
-                    test,
-                    email: req.body.email,
-                    hideHome: true
-                });
+        if (body && Array.isArray(body)) {
+          // Update Shared Memory
+          liveTests.length = 0;
+          body.forEach(t => liveTests.push(t.test_details || t));
+          console.log(`Resynced ${liveTests.length} tests from DB.`);
 
-            } else {
-                 return res.redirect("/student/home?error=" + encodeURIComponent("Database returned invalid data."));
+          // Try finding again
+          test = findTest(liveTests, testID);
+
+          if (!test) {
+            return res.redirect("/student/home?error=" + encodeURIComponent("Test ID not found (even after DB sync)."));
+          }
+
+          // Found after sync, proceed to verify access code
+          if (test.accessCode) {
+            const serverCode = String(test.accessCode).trim();
+            const userCode = String(req.body.accessCode || '').trim();
+            if (serverCode !== userCode) {
+              return res.redirect("/student/home?error=" + encodeURIComponent("Invalid Access Code."));
             }
-        });
+          }
+
+          res.render("testInstructions", {
+            test,
+            email: req.body.email,
+            hideHome: true
+          });
+
+        } else {
+          return res.redirect("/student/home?error=" + encodeURIComponent("Database returned invalid data."));
+        }
+      });
     });
   } else {
-     console.log(`MATCH FOUND IN MEMORY: ${test.id}`);
+    console.log(`MATCH FOUND IN MEMORY: ${test.id}`);
   }
 
   // console.log("Test is:")
@@ -263,22 +273,48 @@ router.post("/takeTest", checkAuthenticated, (req, res) => {
 
   // Access Code Verification
   if (test.accessCode) {
-      const serverCode = String(test.accessCode).trim();
-      const userCode = String(req.body.accessCode || '').trim();
-      
-      console.log(`Verifying Access Code: TestID=${test.id}, Server='${serverCode}', User='${userCode}'`);
+    const serverCode = String(test.accessCode).trim();
+    const userCode = String(req.body.accessCode || '').trim();
 
-      if (serverCode !== userCode) {
-          return res.redirect("/student/home?error=" + encodeURIComponent("Invalid Access Code. Please try again."));
-      }
+    console.log(`Verifying Access Code: TestID=${test.id}, Server='${serverCode}', User='${userCode}'`);
+
+    if (serverCode !== userCode) {
+      return res.redirect("/student/home?error=" + encodeURIComponent("Invalid Access Code. Please try again."));
+    }
+  }
+
+  res.render("testInstructions", {
+    test,
+    email: req.body.email,
+    hideHome: true
+  });
+});
+
+// Start Exam Route (Called from Instructions page)
+router.post("/startExam", checkAuthenticated, (req, res) => {
+  const teacherModule = require("./teacher");
+  const liveTests = teacherModule.tests;
+  const testID = req.body.testID;
+
+  let test = null;
+  for (let i = 0; i < liveTests.length; i++) {
+    let currentTest = liveTests[i].test_details || liveTests[i];
+    if (currentTest.id === testID) {
+      test = currentTest;
+      break;
+    }
+  }
+
+  if (!test) {
+    return res.redirect("/student/home?error=" + encodeURIComponent("Session expired or Test not found."));
   }
 
   res.render("takeTestByStudent", {
     test,
     email: req.body.email,
-    hideHome: true
+    hideHome: true,
+    aiProctoring: true // Pulse badge active
   });
-
 });
 
 // Route for accepting test responses from students
@@ -320,24 +356,41 @@ router.post('/submitTest', (req, res) => {
   }
   responseOfStudent.qna = qna;
 
-  const options = {
-    url: 'http://127.0.0.1:200/' + 'scoreAndStore',
-    json: true,
-    body: {
-      'response': {
-        "testID": responseOfStudent.testID,
-        "studentEmail": responseOfStudent.studentEmail,
-        "qna": responseOfStudent.qna
-      }
-    }
+  // AI Proctoring: Stop Anomaly Server and get score
+  const anomalyStopOptions = {
+    url: 'http://127.0.0.1:5001/stop',
+    method: 'POST',
+    json: true
   };
 
-  request.post(options, (err, resp, body) => {
-    if (err) {
-      return console.log(err);
+  request.post(anomalyStopOptions, (anomalyErr, anomalyResp, anomalyBody) => {
+    let integrityScore = 100; // Default
+    if (!anomalyErr && anomalyBody && anomalyBody.status === 'success') {
+      integrityScore = anomalyBody.score;
+      console.log("Final Integrity Score from AI:", integrityScore);
+    } else {
+      console.log("Anomaly Server Stop Error or invalid response:", anomalyErr || anomalyBody);
     }
-    // Redirect back to home with success message and email persistence
-    res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&success=" + encodeURIComponent("Examination submitted successfully! Check your results below."));
+
+    const options = {
+      url: 'http://127.0.0.1:200/' + 'scoreAndStore',
+      json: true,
+      body: {
+        'response': {
+          "testID": responseOfStudent.testID,
+          "studentEmail": responseOfStudent.studentEmail,
+          "qna": responseOfStudent.qna,
+          "integrity": integrityScore // Pass real score
+        }
+      }
+    };
+
+    request.post(options, (err, resp, body) => {
+      if (err) {
+        return console.log(err);
+      }
+      res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&success=" + encodeURIComponent("Examination submitted successfully! Check your results below."));
+    });
   });
 
 })
@@ -377,8 +430,8 @@ router.post('/GetResultByEmail', (req, res) => {
 
 router.get("/logout", (req, res) => {
   req.session.destroy((err) => {
-      if (err) console.log(err);
-      res.redirect("/");
+    if (err) console.log(err);
+    res.redirect("/");
   });
 });
 

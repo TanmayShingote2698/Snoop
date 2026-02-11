@@ -130,12 +130,20 @@ class scoreAndStore(Resource):
         t_id = str(response["testID"])
         email = str(response["studentEmail"])
         print(f"Response:{response}")
-        s_id = random.randint(0,20000)
-        mcq_score =random.randint(1,5)
+        
+        # Fetch actual student_id from database
+        student_query = f"SELECT student_id FROM student WHERE email='{email}'"
+        student_data = db.runQuery(student_query)
+        if student_data and len(student_data) > 0:
+            s_id = student_data[0].get('student_id')
+        else:
+            s_id = 0 # Fallback
+            
+        mcq_score = 0 # Initialize to 0, will be incremented
         final_score=mcq_score+random.randint(1,5)
         generated=False
         answers=[]
-        integrity=random.randint(1,100)
+        integrity = response.get("integrity", random.randint(1, 100))
         subjective_score=random.randint(1,20)
         qna = response["qna"]
         print("=======================================")
@@ -171,6 +179,22 @@ class scoreAndStore(Resource):
 
         result = db.insertEntry("result",jsondata)
         print(result)
+
+        # Update student's tests_given count
+        try:
+            student_data_query = f"SELECT tests_given FROM student WHERE email='{email}'"
+            student_profile = db.runQuery(student_data_query)
+            if student_profile:
+                current_tests = student_profile[0].get('tests_given', {"TestAmt": 0})
+                if isinstance(current_tests, str):
+                    import json
+                    current_tests = json.loads(current_tests)
+                
+                new_count = current_tests.get('TestAmt', 0) + 1
+                db.updateEntry("student", {"email": email}, {"tests_given": {"TestAmt": new_count}})
+                print(f"Updated test count for {email} to {new_count}")
+        except Exception as e:
+            print(f"Error updating student test count: {e}")
         
         data = {"result": "success"}
         return jsonify(data)

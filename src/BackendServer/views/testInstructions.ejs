@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Instructions - Snoop System</title>
+</head>
+
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="glass-card p-5">
+                    <div class="text-center mb-5">
+                        <div class="display-4 text-primary mb-3"><i class="fas fa-clipboard-list"></i></div>
+                        <h2 class="font-weight-bold">Examination Instructions</h2>
+                        <p class="text-dim">Please read the following guidelines carefully before starting.</p>
+                    </div>
+
+                    <div class="test-details mb-5 p-4 rounded"
+                        style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);">
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="small text-dim mb-1">Test ID</p>
+                                <h5 class="font-weight-bold">
+                                    <%= test.id %>
+                                </h5>
+                            </div>
+                            <div class="col-6">
+                                <p class="small text-dim mb-1">Duration</p>
+                                <h5 class="font-weight-bold">
+                                    <%= test.testDuration %> Minutes
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rules-section mb-5">
+                        <h5 class="font-weight-bold mb-4"
+                            style="color: var(--secondary); border-left: 4px solid var(--secondary); padding-left: 15px;">
+                            Proctoring Rules</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-3 d-flex align-items-start">
+                                <i class="fas fa-video mr-3 mt-1 text-primary"></i>
+                                <span><strong>Webcam Mandatory:</strong> Your webcam is now active. Ensure your face is
+                                    clearly visible throughout the exam.</span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-start">
+                                <i class="fas fa-eye mr-3 mt-1 text-primary"></i>
+                                <span><strong>Engagement:</strong> Looking away from the screen or using multiple
+                                    monitors will flag your session for suspicious activity.</span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-start">
+                                <i class="fas fa-user-friends mr-3 mt-1 text-primary"></i>
+                                <span><strong>Single User:</strong> Only the registered student should be visible.
+                                    Detection of extra people will result in a warning.</span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-start">
+                                <i class="fas fa-keyboard mr-3 mt-1 text-primary"></i>
+                                <span><strong>Integrity Score:</strong> A real-time integrity score is being calculated.
+                                    This score is final and submitted with your results.</span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-start p-3 rounded" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
+                                <i class="fas fa-exclamation-triangle mr-3 mt-1 text-danger"></i>
+                                <span class="text-danger"><strong>Navigation Locked:</strong> Once you start the test, you <strong>cannot go back</strong> or refresh the page. Any attempt to leave the page will be flagged and may result in auto-submission.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-5">
+                        <a href="/student/home" class="btn-snoop btn-glass mr-3 px-4">
+                            <i class="fas fa-arrow-left mr-2"></i> Back
+                        </a>
+                        <form action="/student/startExam" method="POST">
+                            <input type="hidden" name="email" value="<%= email %>">
+                            <input type="hidden" name="testID" value="<%= test.id %>">
+                            <button type="submit" class="btn-snoop px-5">
+                                Start Examination <i class="fas fa-play ml-2"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

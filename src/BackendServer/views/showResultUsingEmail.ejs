@@ -28,7 +28,7 @@
                     </div>
 
                     <div class="row text-center mt-4">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
                                 <p class="small text-dim mb-1">Total Score</p>
                                 <h3 class="font-weight-bold" style="color: var(--secondary);">
@@ -36,7 +36,7 @@
                                 </h3>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
                                 <p class="small text-dim mb-1">MCQ Points</p>
                                 <h3 class="font-weight-bold">
@@ -44,11 +44,20 @@
                                 </h3>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
-                                <p class="small text-dim mb-1">Subjective Points</p>
+                                <p class="small text-dim mb-1">Subjective</p>
                                 <h3 class="font-weight-bold">
                                     <%= results[i].subjective_score %>
+                                </h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
+                                <p class="small text-dim mb-1">Integrity</p>
+                                <h3 class="font-weight-bold"
+                                    style="color: <%= results[i].integrity < 75 ? '#ef4444' : '#00ff41' %>;">
+                                    <%= results[i].integrity %>%
                                 </h3>
                             </div>
                         </div>
@@ -63,7 +72,7 @@
             <i class="fas fa-arrow-left mr-2"></i> Back to Search
         </button>
         <a href="/student/home" class="btn-snoop ml-3">
-             Dashboard <i class="fas fa-home ml-2"></i>
+            Dashboard <i class="fas fa-home ml-2"></i>
         </a>
     </div>
 </body>

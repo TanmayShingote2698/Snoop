@@ -16,9 +16,41 @@
       <h4 class="font-weight-bold mb-0">Examination: <span style="color: var(--primary);">
           <%= test.id %>
         </span></h4>
-      <p class="text-dim mb-0 small">Student: <%= email %>
-      </p>
+      <div class="d-flex align-items-center mt-1">
+        <p class="text-dim mb-0 small mr-3">Student: <%= email %>
+        </p>
+        <% if (locals.aiProctoring) { %>
+          <span class="badge badge-danger ai-pulse">
+            <i class="fas fa-eye mr-1"></i> AI Proctoring Active
+          </span>
+          <% } %>
+      </div>
     </div>
+    <style>
+      .ai-pulse {
+        background: #ef4444;
+        animation: pulse-red 2s infinite;
+        border: none;
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+      }
+
+      @keyframes pulse-red {
+        0% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        }
+
+        70% {
+          transform: scale(1);
+          box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+        }
+
+        100% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+      }
+    </style>
     <div class="timer-box text-right">
       <p class="text-dim mb-1 small">Time Remaining</p>
       <h3 id="timer" class="font-weight-bold mb-0" style="color: #ef4444;"></h3>
@@ -48,19 +80,25 @@
               .option-card {
                 cursor: pointer;
                 transition: all 0.3s ease;
-                border: 1px solid var(--glass-border); /* Visible border by default */
-                background: rgba(255,255,255,0.02);
+                border: 1px solid var(--glass-border);
+                /* Visible border by default */
+                background: rgba(255, 255, 255, 0.02);
               }
+
               .option-card:hover {
-                background: rgba(255,255,255,0.08) !important;
-                border-color: var(--primary); /* Highlight border on hover */
+                background: rgba(255, 255, 255, 0.08) !important;
+                border-color: var(--primary);
+                /* Highlight border on hover */
                 transform: translateY(-2px);
               }
+
               .option-card.selected {
-                background: rgba(0, 255, 65, 0.15) !important; /* Stronger selection bg */
+                background: rgba(0, 255, 65, 0.15) !important;
+                /* Stronger selection bg */
                 border: 1px solid var(--primary);
                 box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
               }
+
               .option-badge {
                 width: 30px;
                 height: 30px;
@@ -72,44 +110,52 @@
                 justify-content: center;
                 font-weight: bold;
                 margin-right: 15px;
-                box-shadow: 0 0 5px rgba(0,255,65, 0.5);
+                box-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
               }
             </style>
-            
+
             <div class="options-grid mt-3 ml-4">
               <!-- Hidden Input to store the selected answer (1-4) -->
               <input type="hidden" name="<%= test.questions[i].ind %>" id="input_<%= i %>" required>
 
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <div class="p-3 rounded option-card h-100 d-flex align-items-center" 
-                       onclick="selectOption('<%= i %>', 1)" id="q<%= i %>_op1">
+                  <div class="p-3 rounded option-card h-100 d-flex align-items-center"
+                    onclick="selectOption('<%= i %>', 1)" id="q<%= i %>_op1">
                     <div class="option-badge">A</div>
-                    <span class="font-weight-bold"> <%= test.questions[i].op1 %> </span>
+                    <span class="font-weight-bold">
+                      <%= test.questions[i].op1 %>
+                    </span>
                   </div>
                 </div>
-                
+
                 <div class="col-md-6 mb-3">
-                  <div class="p-3 rounded option-card h-100 d-flex align-items-center" 
-                       onclick="selectOption('<%= i %>', 2)" id="q<%= i %>_op2">
+                  <div class="p-3 rounded option-card h-100 d-flex align-items-center"
+                    onclick="selectOption('<%= i %>', 2)" id="q<%= i %>_op2">
                     <div class="option-badge">B</div>
-                    <span class="font-weight-bold"> <%= test.questions[i].op2 %> </span>
+                    <span class="font-weight-bold">
+                      <%= test.questions[i].op2 %>
+                    </span>
                   </div>
                 </div>
 
                 <div class="col-md-6 mb-3">
-                  <div class="p-3 rounded option-card h-100 d-flex align-items-center" 
-                       onclick="selectOption('<%= i %>', 3)" id="q<%= i %>_op3">
+                  <div class="p-3 rounded option-card h-100 d-flex align-items-center"
+                    onclick="selectOption('<%= i %>', 3)" id="q<%= i %>_op3">
                     <div class="option-badge">C</div>
-                    <span class="font-weight-bold"> <%= test.questions[i].op3 %> </span>
+                    <span class="font-weight-bold">
+                      <%= test.questions[i].op3 %>
+                    </span>
                   </div>
                 </div>
 
                 <div class="col-md-6 mb-3">
-                  <div class="p-3 rounded option-card h-100 d-flex align-items-center" 
-                       onclick="selectOption('<%= i %>', 4)" id="q<%= i %>_op4">
+                  <div class="p-3 rounded option-card h-100 d-flex align-items-center"
+                    onclick="selectOption('<%= i %>', 4)" id="q<%= i %>_op4">
                     <div class="option-badge">D</div>
-                    <span class="font-weight-bold"> <%= test.questions[i].op4 %> </span>
+                    <span class="font-weight-bold">
+                      <%= test.questions[i].op4 %>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -157,12 +203,30 @@
       // Remove 'selected' from all options of this question
       for (let i = 1; i <= 4; i++) {
         let el = document.getElementById(`q${qIndex}_op${i}`);
-        if(el) el.classList.remove('selected');
+        if (el) el.classList.remove('selected');
       }
 
       // Add 'selected' to clicked option
       document.getElementById(`q${qIndex}_op${opIndex}`).classList.add('selected');
     }
+    // Navigation Lockdown
+    window.onload = function () {
+      // 1. Block BACK Button
+      history.pushState(null, null, location.href);
+      window.onpopstate = function () {
+        history.go(1);
+      };
+
+      // 2. Refresh/Close Warning
+      window.onbeforeunload = function () {
+        return "Are you sure you want to leave? Your exam progress may be lost.";
+      };
+    };
+
+    // Remove warning on form submit
+    document.getElementById('testFormID').onsubmit = function () {
+      window.onbeforeunload = null;
+    };
   </script>
 </body>
 
