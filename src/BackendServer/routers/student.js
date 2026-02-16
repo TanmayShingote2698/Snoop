@@ -7,15 +7,25 @@ const multer = require("multer");
 const path = require("path");
 const SALT_ROUNDS = 12;
 
-// Multer Storage Configuration for student photos
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+require("dotenv").config();
+
+// Cloudinary Configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'snoop_students',
+        allowed_formats: ['jpg', 'png', 'jpeg'],
+    },
+});
+
 const upload = multer({ storage: storage });
 
 const publicDirPath = require("../public/toGetDir");
@@ -73,13 +83,17 @@ router.post("/login", async (req, res) => {
     }
 
     // Set Session
+    const userName = body['name'] || inputEmail.split('@')[0];
+    const userPhoto = body['photo_url'] || '/public/default-avatar.png'; // Fallback if null
+    
     req.session.user = {
       role: 'student',
       email: inputEmail,
-      name: inputEmail.split('@')[0] // Fallback name
+      name: userName,
+      photo_url: userPhoto
     };
 
-    res.redirect("/student/home?email=" + encodeURIComponent(req.body.email) + "&success=" + encodeURIComponent(`Welcome back, ${req.body.email.split('@')[0]}!`));
+    res.redirect("/student/home?email=" + encodeURIComponent(req.body.email) + "&success=" + encodeURIComponent(`Welcome back, ${userName}!`));
 
   });
 
@@ -98,8 +112,8 @@ router.post("/register", upload.single('photo'), async (req, res) => {
   let inputPassword = req.body.password;
   // SECURITY FIX: Password sent to server for bcrypt hashing (no more MD5)
 
-  // Use uploaded file path or a default placeholder
-  let photoUrl = req.file ? `/uploads/${req.file.filename}` : "/public/default-avatar.png";
+  // Use Cloudinary URL or default placeholder
+  let photoUrl = req.file ? req.file.path : "/public/default-avatar.png";
 
   console.log(inputEmail);
   console.log(inputName);
@@ -283,7 +297,57 @@ router.post("/takeTest", checkAuthenticated, (req, res) => {
     }
   }
 
-  res.render("testInstructions", {
+  // --- TIME WINDOW VALIDATION (START) ---
+  if (test.startTime && test.endTime) {
+      const now = new Date();
+      const start = new Date(test.startTime);
+      const end = new Date(test.endTime);
+
+      if (now < start) {
+          return res.redirect("/student/home?error=" + encodeURIComponent(`Test has not started yet. Starts at: ${start.toLocaleString()}`));
+      }
+      
+      if (now > end) {
+          return res.redirect("/student/home?error=" + encodeURIComponent("Test has expired. Access denied."));
+      }
+  }
+  // --- TIME WINDOW VALIDATION (END) ---
+
+    // res.render("testInstructions", {    <-- OLD
+    //   test,
+    //   email: req.body.email,
+    //   hideHome: true
+    // });
+    
+    // NEW FLOW: Render Instructions First
+    res.render("testInstructions", {
+      test,
+      email: req.body.email,
+      hideHome: true
+    });
+});
+
+// NEW ROUTE: System Check (Called from Instructions page)
+router.post("/systemCheck", checkAuthenticated, (req, res) => {
+  const teacherModule = require("./teacher");
+  const liveTests = teacherModule.tests;
+  const testID = req.body.testID;
+
+  // Verify Test Exists again (Security)
+  let test = null;
+  for (let i = 0; i < liveTests.length; i++) {
+    let currentTest = liveTests[i].test_details || liveTests[i];
+    if (currentTest.id === testID) {
+      test = currentTest;
+      break;
+    }
+  }
+
+  if (!test) {
+    return res.redirect("/student/home?error=" + encodeURIComponent("Session expired or Test not found."));
+  }
+
+  res.render("systemCheck", {
     test,
     email: req.body.email,
     hideHome: true
@@ -315,6 +379,11 @@ router.post("/startExam", checkAuthenticated, (req, res) => {
     hideHome: true,
     aiProctoring: true // Pulse badge active
   });
+});
+
+// Handle reload (GET /startExam) -> Redirect to home (prevents "Cannot GET" error)
+router.get("/startExam", (req, res) => {
+    return res.redirect("/student/home?error=" + encodeURIComponent("Test session terminated due to page reload."));
 });
 
 // Route for accepting test responses from students
@@ -380,7 +449,8 @@ router.post('/submitTest', (req, res) => {
           "testID": responseOfStudent.testID,
           "studentEmail": responseOfStudent.studentEmail,
           "qna": responseOfStudent.qna,
-          "integrity": integrityScore // Pass real score
+          "integrity": integrityScore, // Pass real score
+          "tabSwitchData": req.body.tabSwitchData ? JSON.parse(req.body.tabSwitchData) : [] // Parse hidden input
         }
       }
     };

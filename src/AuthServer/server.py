@@ -79,11 +79,14 @@ class verifyStudent(Resource):
         response = self.parser.parse_args()
         print("Request Received !")
         print(response)
-        loginDetailsCorrect = authFunc.verifyStudent(response['email'],
-                                response['password'])
+        result = authFunc.verifyStudent(response['email'], response['password'])
 
-        if(loginDetailsCorrect):
-            return jsonify({'verify':'Success'})    
+        if result and isinstance(result, dict) and result.get('status'):
+            return jsonify({
+                'verify':'Success', 
+                'name': result.get('name'),
+                'photo_url': result.get('photo_url')
+            })    
 
         return jsonify({'verify':'Fail'})
 
@@ -98,12 +101,11 @@ class verifyAdmin(Resource):
         headers: {"Accept": "application/json","Content-type": "application/json",}
         response = self.parser.parse_args()
         print(response)
-        result = {"Result":400}
-        loginDetailsCorrect = authFunc.verifyAdmin(response['email'],
-                            response['password'])
+        
+        result = authFunc.verifyAdmin(response['email'], response['password'])
 
-        if(loginDetailsCorrect):
-            return jsonify({'verify':'Success'})    
+        if result and isinstance(result, dict) and result.get('status'):
+            return jsonify({'verify':'Success', 'name': result.get('name')})    
 
         return jsonify({'verify':'Fail'})
 
@@ -135,6 +137,24 @@ api.add_resource(AddAdmin, '/addAdmin')
 api.add_resource(verifyStudent, '/verifyStudent')
 api.add_resource(verifyAdmin, '/verifyAdmin')
 api.add_resource(validateStudent, '/validateStudent')
+
+class UpdatePassword(Resource):
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('email', type=str, required=True, help="Email is required")
+        self.parser.add_argument('password', type=str, required=True, help="New password is required")
+
+    def post(self):
+        print("Update Password Called")
+        args = self.parser.parse_args()
+        success = authFunc.updatePassword(args['email'], args['password'])
+        
+        if success:
+            return jsonify({'status': 'success', 'message': 'Password updated successfully'})
+        else:
+            return jsonify({'status': 'fail', 'message': 'User not found or database error'}), 400
+
+api.add_resource(UpdatePassword, '/updatePassword')
 
 
 

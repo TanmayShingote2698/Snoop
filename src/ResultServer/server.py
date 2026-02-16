@@ -144,6 +144,7 @@ class scoreAndStore(Resource):
         generated=False
         answers=[]
         integrity = response.get("integrity", random.randint(1, 100))
+        tab_switch_data = response.get("tabSwitchData", []) # Extract tab switch logs
         subjective_score=random.randint(1,20)
         qna = response["qna"]
         print("=======================================")
@@ -172,6 +173,7 @@ class scoreAndStore(Resource):
                 'generated':generated,
                 'answers':answers,
                 'integrity':integrity,
+                'tab_switch_data': tab_switch_data, # Store in DB
                 'subjective_score':subjective_score
             }
 
@@ -209,7 +211,8 @@ if __name__ == "__main__":
     db = dbManager()
     port = int(os.getenv('RESULT_SERVER_PORT', 200))
     print(f"Starting Result Server on port {port}...")
-    app.run(host='0.0.0.0', port=port, debug=True)
+    # Disable reloader to prevent MemoryError on Windows with large directory structures
+    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
 
 
 

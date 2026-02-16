@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.result (
     generated BOOLEAN DEFAULT FALSE,
     answers JSONB,
     integrity INT DEFAULT 0,
+    tab_switch_data JSONB DEFAULT '[]'::jsonb,
     subjective_score INT DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );

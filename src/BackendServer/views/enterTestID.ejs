@@ -31,14 +31,18 @@
 
           <div class="row">
             <div class="col-md-6 form-group">
-              <label><i class="fas fa-clock mr-2"></i>Start Time (Hour)</label>
-              <input name="startTime" type="number" class="form-control" placeholder="E.g., 10" required min="0"
-                max="23">
+              <label><i class="fas fa-clock mr-2"></i>Start Date & Time</label>
+              <input name="startTime" type="datetime-local" class="form-control" required>
             </div>
             <div class="col-md-6 form-group">
-              <label><i class="fas fa-hourglass-half mr-2"></i>Duration (Mins)</label>
-              <input name="testDuration" type="number" class="form-control" placeholder="E.g., 60" required>
+              <label><i class="fas fa-history mr-2"></i>End Date & Time</label>
+              <input name="endTime" type="datetime-local" class="form-control" required>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-hourglass-half mr-2"></i>Test Duration (Mins)</label>
+            <input name="testDuration" type="number" class="form-control" placeholder="Time allowed once started (e.g., 60)" required>
           </div>
 
           <div class="form-group mb-4">

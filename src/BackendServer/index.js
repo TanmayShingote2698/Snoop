@@ -1,5 +1,7 @@
 const express = require("express");
 const path = require("path");
+// Load environment variables from project root
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const expressLayouts = require("express-ejs-layouts");
 const multer = require("multer");
 const fs = require("fs");

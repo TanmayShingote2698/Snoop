@@ -1,18 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Instructions - Snoop System</title>
-</head>
-
-<body>
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="glass-card p-5">
-                    <div class="text-center mb-5">
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="glass-card p-5">
+            <div class="text-center mb-5">
                         <div class="display-4 text-primary mb-3"><i class="fas fa-clipboard-list"></i></div>
                         <h2 class="font-weight-bold">Examination Instructions</h2>
                         <p class="text-dim">Please read the following guidelines carefully before starting.</p>
@@ -62,28 +51,59 @@
                                     This score is final and submitted with your results.</span>
                             </li>
                             <li class="mb-3 d-flex align-items-start p-3 rounded" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
-                                <i class="fas fa-exclamation-triangle mr-3 mt-1 text-danger"></i>
-                                <span class="text-danger"><strong>Navigation Locked:</strong> Once you start the test, you <strong>cannot go back</strong> or refresh the page. Any attempt to leave the page will be flagged and may result in auto-submission.</span>
+                                <i class="fas fa-ban mr-3 mt-1 text-danger"></i>
+                                <span class="text-danger"><strong>Strict Prohibitions:</strong>
+                                    <ul class="pl-3 mt-2 mb-0">
+                                        <li>No Tab Switching (Auto-flagged)</li>
+                                        <li>No Copy/Paste (Ctrl+C, Ctrl+V Disabled)</li>
+                                        <li>No Right-Click Context Menu</li>
+                                        <li>No Exiting Fullscreen Mode</li>
+                                        <li>No Mobile Phones allowed</li>
+                                        <li>Microphone must remain unmutes</li>
+                                    </ul>
+                                </span>
                             </li>
                         </ul>
                     </div>
 
+                    <div class="consent-section mb-5 p-4 rounded" style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="consentCheck" onchange="toggleProceed()">
+                            <label class="custom-control-label" for="consentCheck">
+                                I have read and understood all the instructions. I agree to share my camera and microphone access for proctoring purposes and will adhere to the code of conduct.
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-center mt-5">
                         <a href="/student/home" class="btn-snoop btn-glass mr-3 px-4">
-                            <i class="fas fa-arrow-left mr-2"></i> Back
+                            <i class="fas fa-arrow-left mr-2"></i> Decline & Exit
                         </a>
-                        <form action="/student/startExam" method="POST">
+                        <form action="/student/systemCheck" method="POST">
                             <input type="hidden" name="email" value="<%= email %>">
                             <input type="hidden" name="testID" value="<%= test.id %>">
-                            <button type="submit" class="btn-snoop px-5">
-                                Start Examination <i class="fas fa-play ml-2"></i>
+                            <button type="submit" class="btn-snoop px-5" id="proceedBtn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                                Agree & Proceed <i class="fas fa-arrow-right ml-2"></i>
                             </button>
                         </form>
                     </div>
+
+                    <script>
+                        function toggleProceed() {
+                            const checkbox = document.getElementById('consentCheck');
+                            const btn = document.getElementById('proceedBtn');
+                            if (checkbox.checked) {
+                                btn.disabled = false;
+                                btn.style.opacity = '1';
+                                btn.style.cursor = 'pointer';
+                            } else {
+                                btn.disabled = true;
+                                btn.style.opacity = '0.5';
+                                btn.style.cursor = 'not-allowed';
+                            }
+                        }
+                    </script>
                 </div>
             </div>
         </div>
     </div>
-</body>
-
-</html>
