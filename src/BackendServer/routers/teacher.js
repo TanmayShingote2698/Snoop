@@ -31,6 +31,17 @@ router.post("/submitQues", (req, res) => {
         console.log(`   Checking test[${i}]: id="${tests[i].id}" (type: ${typeof tests[i].id})`);
         if (tests[i].id === testID) {
             console.log(`   ✓✓✓ TEST FOUND at index ${i} - ADDING QUESTION ✓✓✓`);
+            
+            // RBAC Check
+            if (tests[i].created_by && tests[i].created_by !== req.session.user.email) {
+                console.log(`   ❌ RBAC Violation: User ${req.session.user.email} tried to add question to test ${testID}`);
+                 if (req.headers['x-requested-with'] === 'XMLHttpRequest') {
+                    return res.json({ success: false, message: "Permission denied." });
+                 } else {
+                    return res.redirect("/teacher/showAllTests"); // Or render error
+                 }
+            }
+
             console.log(`   Before add: ${tests[i].questions.length} questions`);
             
             if (req.body.op1 !== undefined && req.body.op1 !== '') {
@@ -102,6 +113,16 @@ router.post("/deleteQuestion", (req, res) => {
     for (let i = 0; i < tests.length; i++) {
         if (tests[i].id === testID) {
             console.log(`   Test found at index ${i}`);
+            
+            // RBAC Check
+            if (tests[i].created_by && tests[i].created_by !== req.session.user.email) {
+                 console.log(`   ❌ RBAC Violation: Delete Question denied.`);
+                 if (req.headers['x-requested-with'] === 'XMLHttpRequest') {
+                    return res.json({ success: false, message: "Permission denied." });
+                 }
+                 break; 
+            }
+
             console.log(`   Before delete: ${tests[i].questions.length} questions`);
             
             if (questionIndex >= 0 && questionIndex < tests[i].questions.length) {
@@ -135,7 +156,10 @@ router.get("/logout", (req, res) => {
 });
 
 router.get("/enterTestID", checkAuthenticated, (req, res) => {
-    res.render("enterTestID", { hideHome: true });
+    res.render("enterTestID", { 
+        hideHome: true,
+        currentPage: 'create_test'
+    });
 });
 
 router.post("/takeTestID", (req, res) => {
@@ -153,17 +177,41 @@ router.post("/takeTestID", (req, res) => {
         test.testDuration = req.body.testDuration;
         test.warningThreshold = req.body.warningThreshold;
         test.startTime = req.body.startTime;
+        test.endTime = req.body.endTime; // Capture End Time
         test.accessCode = req.body.accessCode; // Store Access Code
+        test.created_by = req.session.user.email; // RBAC: Tag with creator email
         test.questions = [];
         tests.push(test);
+        
+        // SAVE TO DB IMMEDIATELY to persist ownership
+        const options = {
+            url: 'http://127.0.0.1:100/createTest',
+            json: true,
+            body: {
+                'test_id': testID,
+                'test_details': test
+            }
+        };
+        request.post(options, (err, resp, body) => {
+            if (err) console.log("Error saving new test to DB:", err);
+            else console.log("New test saved to DB with owner:", test.created_by);
+        });
+
         console.log(`   ✅ New test pushed to tests array at index ${tests.length - 1}`);
-        console.log(`   ✅ Test structure: {id: "${test.id}", questions: [], ...}`);
+        console.log(`   ✅ Test structure: {id: "${test.id}", start: "${test.startTime}", end: "${test.endTime}", ...}`);
     } else {
+        // RBAC: Verify ownership before update
+        if (tests[existingTestIndex].created_by && tests[existingTestIndex].created_by !== req.session.user.email) {
+             console.log(`   ❌ RBAC Violation: User ${req.session.user.email} tried to edit test ${testID} owned by ${tests[existingTestIndex].created_by}`);
+             return res.redirect("/teacher/showAllTests?error=" + encodeURIComponent("You do not have permission to edit this test."));
+        }
+
         // Update existing test details if re-entering
         console.log(`   → Updating EXISTING test at index ${existingTestIndex}`);
         tests[existingTestIndex].testDuration = req.body.testDuration;
         tests[existingTestIndex].warningThreshold = req.body.warningThreshold;
         tests[existingTestIndex].startTime = req.body.startTime;
+        tests[existingTestIndex].endTime = req.body.endTime;
         tests[existingTestIndex].accessCode = req.body.accessCode; // Update Access Code
         console.log(`   ✅ Existing test updated`);
     }
@@ -217,13 +265,16 @@ router.post("/login", async (req, res) => {
         }
 
         // Set Session
+        const userName = body['name'] || 'Faculty';
+        
         req.session.user = {
             role: 'teacher',
             email: inputEmail,
-            name: body['name'] || 'Faculty' // Assuming auth server returns name, else default
+            name: userName,
+            photo_url: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName) + '&background=random' // Use UI Avatars for teachers
         };
         
-        req.session.successMessage = "Welcome back, Faculty!";
+        req.session.successMessage = `Welcome back, ${userName}!`;
         
         // express-session will auto-save the session
         res.redirect("/teacher/home");
@@ -369,9 +420,31 @@ router.post("/editTest", checkAuthenticated, (req, res) => {
         return res.redirect("/teacher/showAllTests");
     }
 
-    res.render("createTest2", {
-        testIDfromNode: testID,
-        questions: test.questions || [],
+    // RBAC Check
+    if (test.created_by && test.created_by !== req.session.user.email) {
+        req.session.errorMessage = "Permission denied: You cannot edit this test.";
+        return res.redirect("/teacher/showAllTests");
+    }
+
+    // Time-based edit lock: Block editing for ongoing or completed tests
+    const now = new Date();
+    const start = test.startTime ? new Date(test.startTime) : null;
+    const end = test.endTime ? new Date(test.endTime) : null;
+    
+    if (start && end) {
+        if (now >= start && now <= end) {
+            req.session.errorMessage = "This test is currently ongoing and cannot be edited.";
+            return res.redirect("/teacher/showAllTests");
+        }
+        if (now > end) {
+            req.session.errorMessage = "This test has been completed and cannot be edited.";
+            return res.redirect("/teacher/showAllTests");
+        }
+    }
+
+    // Render Edit Details View instead of Questions View directly
+    res.render("editTestDetails", {
+        test: test,
         hideHome: true
     });
 });
@@ -390,6 +463,16 @@ router.post("/deleteTest", checkAuthenticated, (req, res) => {
             'test_id': testID
         }
     };
+
+    const testIndex = tests.findIndex(t => t.id === testID);
+    if (testIndex !== -1) {
+        const test = tests[testIndex];
+        // RBAC Check
+        if (test.created_by && test.created_by !== req.session.user.email) {
+             req.session.errorMessage = "Permission denied: You cannot delete this test.";
+             return res.redirect("/teacher/showAllTests");
+        }
+    }
 
     request.post(deleteOptions, (deleteErr, deleteResp, deleteBody) => {
         if (deleteErr) {
@@ -512,6 +595,7 @@ router.post("/saveGeneratedTest", checkAuthenticated, (req, res) => {
             accessCode: accessCode,
             questions: questions,
             generatedByAI: true,
+            created_by: req.session.user.email, // RBAC Tag
             generatedAt: new Date().toISOString()
         };
 
@@ -581,9 +665,40 @@ router.get("/showAllTests", checkAuthenticated, (req, res) => {
             console.log("Error parsing DB response:", e);
         }
 
+        // RBAC: Filter tests to show only those created by the logged-in teacher
+        const userEmail = req.session.user.email;
+        let myTests = tests.filter(t => t.created_by === userEmail); 
+        
+        // Apply status filter if provided (upcoming, ongoing, completed)
+        const filter = req.query.filter;
+        let pageTitle = 'All Examinations';
+        
+        if (filter) {
+            const now = new Date();
+            myTests = myTests.filter(t => {
+                const start = t.startTime ? new Date(t.startTime) : null;
+                const end = t.endTime ? new Date(t.endTime) : null;
+                
+                if (!start || !end) return filter === 'ongoing'; // No time = ongoing
+                
+                if (filter === 'upcoming') return now < start;
+                if (filter === 'ongoing') return now >= start && now <= end;
+                if (filter === 'completed') return now > end;
+                return true;
+            });
+            
+            if (filter === 'upcoming') pageTitle = 'Upcoming Examinations';
+            else if (filter === 'ongoing') pageTitle = 'Ongoing Examinations';
+            else if (filter === 'completed') pageTitle = 'Completed Examinations';
+        }
+        
+        console.log(`\n🕵️ RBAC View: User ${userEmail} sees ${myTests.length} tests (filter: ${filter || 'none'})`);
+
         res.render("showAllTests", {
-            tests,
-            hideHome: true
+            tests: myTests,
+            hideHome: true,
+            pageTitle: pageTitle,
+            activeFilter: filter || 'all'
         });
     });
 });
@@ -657,7 +772,136 @@ router.post("/uploadQuestions", checkAuthenticated, upload.single('file'), (req,
 
 // Teacher Home Page
 router.get("/home", checkAuthenticated, (req, res) => {
-    res.render("teacherHome", { hideHome: true });
+    const userEmail = req.session.user.email;
+    
+    // Fetch tests from DB via TestServer API
+    const options = {
+        url: 'http://localhost:100/getAllTest',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        json: true
+    };
+    
+    request(options, (err, response, body) => {
+        let allTests = [];
+        
+        // 1. Add in-memory tests (created this session)
+        const memoryTests = tests.filter(t => t.created_by === userEmail);
+        memoryTests.forEach(t => {
+            allTests.push({
+                id: t.id,
+                startTime: t.startTime || null,
+                endTime: t.endTime || null,
+                testDuration: t.testDuration || null,
+                created_by: t.created_by
+            });
+        });
+        
+        // 2. Add DB tests (from TestServer)
+        if (!err && body && Array.isArray(body)) {
+            body.forEach(record => {
+                const details = record.test_details || record;
+                // Avoid duplicates (already in memory)
+                const alreadyInMemory = allTests.some(t => t.id === (details.id || details.test_id));
+                if (!alreadyInMemory) {
+                    // Only show tests created by this teacher
+                    if (!details.created_by || details.created_by === userEmail) {
+                        allTests.push({
+                            id: details.id || details.test_id || 'Unknown',
+                            startTime: details.startTime || details.start_time || null,
+                            endTime: details.endTime || details.end_time || null,
+                            testDuration: details.testDuration || details.duration || null,
+                            created_by: details.created_by || null
+                        });
+                    }
+                }
+            });
+        } else {
+            console.log("Could not fetch tests from DB:", err ? err.message : "No data");
+        }
+        
+        // Calculate Stats & Build Recent Activity
+        const now = new Date();
+        let upcoming = 0;
+        let ongoing = 0;
+        let completed = 0;
+        
+        const recentTests = allTests.map((t) => {
+            const start = t.startTime ? new Date(t.startTime) : null;
+            const end = t.endTime ? new Date(t.endTime) : null;
+            let status = 'unknown';
+            let timeInfo = '';
+            
+            if (start && end) {
+                if (now < start) {
+                    upcoming++;
+                    status = 'upcoming';
+                    const diffMs = start - now;
+                    const diffMins = Math.round(diffMs / 60000);
+                    if (diffMins < 60) {
+                        timeInfo = `in ${diffMins} min`;
+                    } else if (diffMins < 1440) {
+                        timeInfo = `in ${Math.round(diffMins / 60)} hr`;
+                    } else {
+                        timeInfo = `in ${Math.round(diffMins / 1440)} days`;
+                    }
+                } else if (now >= start && now <= end) {
+                    ongoing++;
+                    status = 'ongoing';
+                    const diffMs = end - now;
+                    const diffMins = Math.round(diffMs / 60000);
+                    if (diffMins < 60) {
+                        timeInfo = `${diffMins} min left`;
+                    } else {
+                        timeInfo = `${Math.round(diffMins / 60)} hr left`;
+                    }
+                } else if (now > end) {
+                    completed++;
+                    status = 'completed';
+                    const diffMs = now - end;
+                    const diffMins = Math.round(diffMs / 60000);
+                    if (diffMins < 60) {
+                        timeInfo = `${diffMins} min ago`;
+                    } else if (diffMins < 1440) {
+                        timeInfo = `${Math.round(diffMins / 60)} hr ago`;
+                    } else {
+                        timeInfo = `${Math.round(diffMins / 1440)} days ago`;
+                    }
+                }
+            } else {
+                ongoing++;
+                status = 'ongoing';
+                timeInfo = 'No time set';
+            }
+            
+            return {
+                id: t.id,
+                status: status,
+                timeInfo: timeInfo,
+                startTime: start ? start.toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A',
+                duration: t.testDuration || 'N/A'
+            };
+        });
+
+        // Sort by start time — earliest first
+        recentTests.sort((a, b) => {
+            const timeA = a.startTime === 'N/A' ? Infinity : new Date(a.startTime).getTime();
+            const timeB = b.startTime === 'N/A' ? Infinity : new Date(b.startTime).getTime();
+            return timeA - timeB;
+        });
+
+        res.render("teacherHome", { 
+            hideHome: true,
+            currentPage: 'dashboard',
+            stats: {
+                total: allTests.length,
+                upcoming,
+                ongoing,
+                completed
+            },
+            recentTests: recentTests
+        });
+    });
 });
 
 module.exports = {

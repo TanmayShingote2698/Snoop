@@ -1,0 +1,179 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="glass-card text-center">
+            <div class="mb-4">
+                <i class="fas fa-tools fa-3x text-primary mb-3"></i>
+                <h2 class="font-weight-bold">System Compatibility Check</h2>
+                <p class="text-dim">We need to verify your system readiness before the exam begins.</p>
+            </div>
+
+            <div class="status-grid mb-5 text-left">
+                <!-- Internet Check -->
+                <div class="check-item p-3 mb-3 rounded d-flex align-items-center justify-content-between" id="check-net" style="background: rgba(255,255,255,0.02);">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-box mr-3"><i class="fas fa-wifi"></i></div>
+                        <div>
+                            <h6 class="mb-0 font-weight-bold">Internet Connection</h6>
+                            <small class="text-dim">Stable connection required</small>
+                        </div>
+                    </div>
+                    <i class="fas fa-spinner fa-spin status-icon"></i>
+                </div>
+
+                <!-- Camera Access -->
+                <div class="check-item p-3 mb-3 rounded d-flex align-items-center justify-content-between" id="check-cam" style="background: rgba(255,255,255,0.02);">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-box mr-3"><i class="fas fa-video"></i></div>
+                        <div>
+                            <h6 class="mb-0 font-weight-bold">Webcam Access</h6>
+                            <small class="text-dim">Required for proctoring</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="checkMedia()">Allow Access</button>
+                </div>
+
+                <!-- Microphone Access -->
+                <div class="check-item p-3 mb-3 rounded d-flex align-items-center justify-content-between" id="check-mic" style="background: rgba(255,255,255,0.02);">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-box mr-3"><i class="fas fa-microphone"></i></div>
+                        <div>
+                            <h6 class="mb-0 font-weight-bold">Microphone Access</h6>
+                            <small class="text-dim">Required for audio monitoring</small>
+                        </div>
+                    </div>
+                    <span class="badge badge-secondary">Pending</span>
+                </div>
+
+                <!-- Fullscreen Mode -->
+                <div class="check-item p-3 mb-3 rounded d-flex align-items-center justify-content-between" id="check-screen" style="background: rgba(255,255,255,0.02);">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-box mr-3"><i class="fas fa-expand"></i></div>
+                        <div>
+                            <h6 class="mb-0 font-weight-bold">Fullscreen Mode</h6>
+                            <small class="text-dim">Exam must be taken in fullscreen</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="enableFullscreen()">Enable</button>
+                </div>
+            </div>
+
+            <!-- Preview Area -->
+            <div class="video-preview mb-4 text-center" style="display: none;">
+                <video id="previewVideo" autoplay playsinline muted style="width: 320px; border-radius: 10px; border: 2px solid var(--primary); box-shadow: 0 0 20px rgba(0,255,65,0.2);"></video>
+                <p class="small text-success mt-2"><i class="fas fa-check-circle"></i> Camera feeds are working correctly.</p>
+            </div>
+
+            <!-- Final Action -->
+            <form action="/student/startExam" method="POST" id="startForm">
+                <input type="hidden" name="email" value="<%= email %>">
+                <input type="hidden" name="testID" value="<%= test.id %>">
+                <p class="text-center text-danger small mb-3" id="errorMsg" style="display: none;">Please complete all system checks to proceed.</p>
+                <button type="submit" class="btn-snoop px-5 w-100" id="startBtn" disabled>
+                    <i class="fas fa-lock mr-2"></i> Checks Pending...
+                </button>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .icon-box {
+        width: 40px; height: 40px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--primary);
+    }
+    .check-success {
+        border: 1px solid var(--primary) !important;
+        background: rgba(0,255,65,0.05) !important;
+    }
+    .check-success .status-icon {
+        color: var(--primary);
+    }
+    .check-error {
+        border: 1px solid #ef4444 !important;
+    }
+</style>
+
+<script>
+    let checks = {
+        net: false,
+        media: false,
+        fullscreen: false
+    };
+
+    function updateState() {
+        const btn = document.getElementById('startBtn');
+        if(checks.net && checks.media && checks.fullscreen) {
+            btn.disabled = false;
+            btn.innerHTML = 'Enter Examination Environment <i class="fas fa-chevron-right ml-2"></i>';
+            btn.classList.remove('btn-snoop-disabled');
+        } else {
+            btn.disabled = true;
+        }
+    }
+
+    function markSuccess(id) {
+        const el = document.getElementById(id);
+        el.classList.add('check-success');
+        const icon = el.querySelector('.status-icon') || el.querySelector('.badge') || el.querySelector('button');
+        if(icon.tagName === 'BUTTON') {
+            icon.outerHTML = '<i class="fas fa-check-circle text-primary fa-lg"></i>';
+        } else {
+            icon.outerHTML = '<i class="fas fa-check-circle text-primary fa-lg"></i>';
+        }
+    }
+
+    // 1. Internet Check
+    window.addEventListener('load', () => {
+        if(navigator.onLine) {
+            checks.net = true;
+            markSuccess('check-net');
+        }
+        updateState();
+    });
+
+    // 2. Media Check (Camera + Mic)
+    async function checkMedia() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.querySelector('.video-preview').style.display = 'block';
+            document.getElementById('previewVideo').srcObject = stream;
+            
+            checks.media = true;
+            markSuccess('check-cam');
+            markSuccess('check-mic'); // Both cleared at once
+            updateState();
+        } catch (err) {
+            console.error("Media Error:", err);
+            alert("Access Denied: Please allow Camera and Microphone permissions in your browser settings to proceed.");
+        }
+    }
+
+    // 3. Fullscreen Check
+    function enableFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().then(() => {
+                checks.fullscreen = true;
+                markSuccess('check-screen');
+                updateState();
+            }).catch(err => {
+                alert("Fullscreen blocked: " + err.message);
+            });
+        }
+    }
+
+    // Monitor Fullscreen Exit
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            checks.fullscreen = false;
+            const el = document.getElementById('check-screen');
+            el.classList.remove('check-success');
+            el.querySelector('.status-icon, .fa-check-circle').outerHTML = '<button class="btn btn-sm btn-outline-primary" onclick="enableFullscreen()">Enable</button>';
+            updateState();
+        }
+    });
+</script>

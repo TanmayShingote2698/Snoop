@@ -9,36 +9,93 @@
 
 <body>
   <div class="text-center mb-5">
-    <h2 class="font-weight-bold">Available Examinations</h2>
+    <h2 class="font-weight-bold"><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Available Examinations' %></h2>
     <p class="text-dim">Monitor and manage your active test sessions.</p>
   </div>
 
   <div class="row">
-    <% tests.forEach(function(test){ %>
-      <div class="col-md-6 col-lg-4 mb-4">
-        <div class="glass-card h-100">
-          <div class="text-center mb-4">
-            <i class="fas fa-file-signature fa-2x mb-2" style="color: var(--primary);"></i>
-            <h5 class="font-weight-bold">Test ID: <%= test.id %>
-            </h5>
-          </div>
-
-          <form action="/teacher/showTestAfterCreation" method="POST">
-            <input type="hidden" name="testID" value="<%= test.id %>">
-            <button type="submit" class="btn-snoop w-100 justify-content-center mb-2">
-              View Details <i class="fas fa-external-link-alt ml-2"></i>
-            </button>
-          </form>
-
-          <form action="/teacher/deleteTest" method="POST" onsubmit="return confirm('Are you sure you want to delete this test? This action cannot be undone.');">
-            <input type="hidden" name="testID" value="<%= test.id %>">
-            <button type="submit" class="btn-snoop w-100 justify-content-center" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
-              Delete Test <i class="fas fa-trash ml-2"></i>
-            </button>
-          </form>
-        </div>
+    <% if (tests.length === 0) { %>
+      <div class="col-12 text-center py-5">
+        <i class="fas fa-folder-open fa-3x mb-3" style="color: var(--text-dim);"></i>
+        <h5 style="color: var(--text-dim);">No tests found.</h5>
+        <a href="/teacher/showAllTests" class="btn-snoop mt-3" style="display: inline-flex;">View All Tests</a>
       </div>
+    <% } else { %>
+      <% tests.forEach(function(test){ %>
+        <%
+          var now = new Date();
+          var start = test.startTime ? new Date(test.startTime) : null;
+          var end = test.endTime ? new Date(test.endTime) : null;
+          var status = 'unknown';
+          var statusColor = '#64748b';
+          var statusBg = 'rgba(100,116,139,0.2)';
+          var statusIcon = 'fa-question-circle';
+          var timeInfo = '';
+          
+          if (start && end) {
+            if (now < start) {
+              status = 'Upcoming';
+              statusColor = '#34d399'; statusBg = 'rgba(52,211,153,0.2)'; statusIcon = 'fa-clock';
+              var diffMins = Math.round((start - now) / 60000);
+              timeInfo = diffMins < 60 ? 'in ' + diffMins + ' min' : diffMins < 1440 ? 'in ' + Math.round(diffMins/60) + ' hr' : 'in ' + Math.round(diffMins/1440) + ' days';
+            } else if (now >= start && now <= end) {
+              status = 'Ongoing';
+              statusColor = '#fbbf24'; statusBg = 'rgba(251,191,36,0.2)'; statusIcon = 'fa-play';
+              var leftMins = Math.round((end - now) / 60000);
+              timeInfo = leftMins < 60 ? leftMins + ' min left' : Math.round(leftMins/60) + ' hr left';
+            } else {
+              status = 'Completed';
+              statusColor = '#818cf8'; statusBg = 'rgba(99,102,241,0.2)'; statusIcon = 'fa-check';
+              var agoMins = Math.round((now - end) / 60000);
+              timeInfo = agoMins < 60 ? agoMins + ' min ago' : agoMins < 1440 ? Math.round(agoMins/60) + ' hr ago' : Math.round(agoMins/1440) + ' days ago';
+            }
+          } else {
+            status = 'No Schedule';
+            statusIcon = 'fa-calendar-times';
+          }
+        %>
+        <div class="col-md-6 col-lg-4 mb-4">
+          <div class="glass-card h-100 d-flex flex-column">
+            <!-- Status Badge -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span style="background: <%= statusBg %>; color: <%= statusColor %>; padding: 5px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                <i class="fas <%= statusIcon %> mr-1"></i> <%= status %>
+              </span>
+              <% if (timeInfo) { %>
+                <small style="color: var(--text-dim);"><%= timeInfo %></small>
+              <% } %>
+            </div>
+
+            <div class="text-center mb-3">
+              <i class="fas fa-file-signature fa-2x mb-2" style="color: var(--primary);"></i>
+              <h5 class="font-weight-bold mb-1">Test ID: <%= test.id %></h5>
+              <% if (start) { %>
+                <small style="color: var(--text-dim);"><i class="far fa-calendar-alt mr-1"></i> <%= start.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) %></small>
+              <% } %>
+              <% if (test.testDuration) { %>
+                <small class="d-block" style="color: var(--text-dim);"><i class="far fa-clock mr-1"></i> <%= test.testDuration %> min</small>
+              <% } %>
+            </div>
+
+            <div class="mt-auto">
+              <form action="/teacher/showTestAfterCreation" method="POST">
+                <input type="hidden" name="testID" value="<%= test.id %>">
+                <button type="submit" class="btn-snoop w-100 justify-content-center mb-2">
+                  View Details <i class="fas fa-external-link-alt ml-2"></i>
+                </button>
+              </form>
+
+              <form action="/teacher/deleteTest" method="POST" onsubmit="return confirm('Are you sure you want to delete this test? This action cannot be undone.');">
+                <input type="hidden" name="testID" value="<%= test.id %>">
+                <button type="submit" class="btn-snoop w-100 justify-content-center" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                  Delete Test <i class="fas fa-trash ml-2"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
       <% }) %>
+    <% } %>
   </div>
 </body>
 

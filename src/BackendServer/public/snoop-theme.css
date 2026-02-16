@@ -1,7 +1,7 @@
 :root {
     --bg-dark: #050505;
     --bg-card: rgba(20, 20, 20, 0.9);
-    --primary: #00ff41;
+    --primary: #dd00ff;
     --secondary: #003b00;
     --text-main: #e5e5e5;
     --text-dim: #a3a3a3;
@@ -10,7 +10,7 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, var(--bg-dark) 0%, #0a0a0a 100%);
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #5d5c5c 100%);
     color: var(--text-main);
     min-height: 100vh;
     margin: 0;

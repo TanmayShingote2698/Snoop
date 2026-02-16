@@ -60,6 +60,7 @@
   <form action="/student/submitTest" method="POST" id="testFormID">
     <input type="hidden" name="email" value="<%= email %>">
     <input type="hidden" name="testID" value="<%= test.id %>">
+    <input type="hidden" name="tabSwitchData" id="tabSwitchData" value="[]">
 
     <% for(var i=0 ; i < test.questions.length ; i++ ){ %>
       <div class="glass-card mb-4 p-4">
@@ -93,24 +94,24 @@
               }
 
               .option-card.selected {
-                background: rgba(0, 255, 65, 0.15) !important;
+                background: rgba(59, 130, 246, 0.15) !important;
                 /* Stronger selection bg */
                 border: 1px solid var(--primary);
-                box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
               }
 
               .option-badge {
                 width: 30px;
                 height: 30px;
                 background: var(--primary);
-                color: #000;
+                color: #fff;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-weight: bold;
                 margin-right: 15px;
-                box-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+                box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
               }
             </style>
 
@@ -209,23 +210,221 @@
       // Add 'selected' to clicked option
       document.getElementById(`q${qIndex}_op${opIndex}`).classList.add('selected');
     }
-    // Navigation Lockdown
-    window.onload = function () {
-      // 1. Block BACK Button
-      history.pushState(null, null, location.href);
-      window.onpopstate = function () {
-        history.go(1);
-      };
-
-      // 2. Refresh/Close Warning
-      window.onbeforeunload = function () {
-        return "Are you sure you want to leave? Your exam progress may be lost.";
-      };
-    };
 
     // Remove warning on form submit
     document.getElementById('testFormID').onsubmit = function () {
       window.onbeforeunload = null;
+    };
+
+    // --- STRICT PROCTORING ENFORCEMENT & LOGGING ---
+
+    let isSubmitting = false;
+    let proctoringLogs = []; // Renamed from tabSwitchLogs for clarity, but still sent to 'tabSwitchData' input
+    let awayStartTime = null;
+    let fullscreenExitStartTime = null;
+
+    // Helper to log events
+    function logEvent(type, startTime, endTime) {
+        let duration = (endTime - startTime) / 1000;
+        proctoringLogs.push({
+            type: type, // 'TAB_SWITCH' or 'FULLSCREEN_EXIT'
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            durationSeconds: duration
+        });
+        updateHiddenInput();
+    }
+
+    function updateHiddenInput() {
+        let logInput = document.getElementById('tabSwitchData');
+        if(logInput) {
+            logInput.value = JSON.stringify(proctoringLogs);
+        }
+    }
+
+    // Overlay for Fullscreen Enforcement
+    const fullscreenOverlay = document.createElement('div');
+    fullscreenOverlay.id = 'fullscreenOverlay';
+    fullscreenOverlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;';
+    fullscreenOverlay.innerHTML = `
+        <i class="fas fa-expand fa-4x mb-4 text-primary"></i>
+        <h2>Fullscreen Mode Required</h2>
+        <p class="text-dim mb-4">You must be in fullscreen mode to take this exam.</p>
+        <button class="btn-snoop px-5" onclick="enterFullscreen()">Enter Fullscreen & Start</button>
+    `;
+    document.body.appendChild(fullscreenOverlay);
+
+    function enterFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().then(() => {
+                document.getElementById('fullscreenOverlay').style.display = 'none';
+            }).catch(err => {
+                // Swal.fire("Error enabling fullscreen: " + err.message);
+            });
+        }
+    }
+
+    // Check Fullscreen on Load
+    if (!document.fullscreenElement) {
+        document.getElementById('fullscreenOverlay').style.display = 'flex';
+    } else {
+        document.getElementById('fullscreenOverlay').style.display = 'none';
+    }
+
+    // Monitor Fullscreen Changes
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && !isSubmitting) {
+            // EXITED Fullscreen
+            fullscreenExitStartTime = new Date();
+            
+            document.getElementById('fullscreenOverlay').style.display = 'flex';
+            Swal.fire({
+                icon: 'warning',
+                title: 'Fullscreen Exited!',
+                text: 'You have left the examination environment. What would you like to do?',
+                showDenyButton: true,
+                confirmButtonText: 'Return to Test',
+                denyButtonText: 'Submit & Finish',
+                confirmButtonColor: 'var(--primary)',
+                denyButtonColor: '#ef4444',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then((result) => {
+                let fullscreenExitEndTime = new Date();
+                
+                if (result.isConfirmed) {
+                    // Log the exit event before re-entering
+                    logEvent('FULLSCREEN_EXIT', fullscreenExitStartTime, fullscreenExitEndTime);
+                    enterFullscreen();
+                } else if (result.isDenied) {
+                    // Log the exit event even if submitting
+                    logEvent('FULLSCREEN_EXIT', fullscreenExitStartTime, fullscreenExitEndTime);
+                    isSubmitting = true;
+                    document.getElementById('testFormID').submit();
+                }
+            });
+        } else {
+            // ENTERED Fullscreen
+            document.getElementById('fullscreenOverlay').style.display = 'none';
+        }
+    });
+
+    // 1. Disable Right Click
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // 2. Disable Copy/Cut/Paste
+    document.oncut = document.oncopy = document.onpaste = function(event) {
+        event.preventDefault();
+        return false;
+    };
+
+    // 3. Detect Tab Switching (with Type & Duration Tracking)
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden && !isSubmitting) {
+            // User left the tab
+            awayStartTime = new Date();
+            
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tab Switching Detected!',
+                text: 'Moving away from the test window is prohibited. This incident has been recorded.',
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'I Understand',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+        } else if (!document.hidden && awayStartTime) {
+            // User returned
+            let awayEndTime = new Date();
+            logEvent('TAB_SWITCH', awayStartTime, awayEndTime);
+            awayStartTime = null; // Reset
+        }
+    });
+
+    // Handle Submit Button Click (Ensures warnings are suppressed)
+    document.getElementById('endTestId').onclick = function() {
+        isSubmitting = true;
+    };
+
+    // Ensure form submit also sets flag (covers creating programmatic submits)
+    const originalSubmit = document.getElementById('testFormID').submit;
+    document.getElementById('testFormID').submit = function() {
+        isSubmitting = true;
+        originalSubmit.apply(this);
+    };
+    
+    // Also listen to the actual submit event
+    document.getElementById('testFormID').addEventListener('submit', function() {
+        isSubmitting = true;
+    });
+
+    // Navigation Lockdown (Back Button Intercept)
+    window.onload = function () {
+      // 1. Trap Back Button
+      history.pushState(null, null, location.href);
+      window.onpopstate = function () {
+        Swal.fire({
+            title: 'Leave Exam?',
+            text: "Do you want to submit your test and leave?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Submit & Leave',
+            cancelButtonText: 'No, Stay',
+            confirmButtonColor: '#ef4444', // Red for dangerous action
+            cancelButtonColor: 'var(--primary)',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                isSubmitting = true;
+                document.getElementById('testFormID').submit();
+            } else {
+                history.pushState(null, null, location.href); // Re-trap
+            }
+        });
+      };
+      
+      // 2. Auto-Submit on Reload/Close
+      window.onbeforeunload = function () {
+        if (!isSubmitting) {
+            // User is trying to reload or close
+            isSubmitting = true; // Prevent loop
+            
+            // Collect Form Data
+            const form = document.getElementById('testFormID');
+            const formData = new FormData(form);
+            const searchParams = new URLSearchParams(formData);
+
+            // Use fetch with keepalive to ensure request completes even after unload
+            fetch('/student/submitTest', {
+                method: 'POST',
+                body: searchParams,
+                keepalive: true
+            }).catch(err => console.error("Auto-submit failed:", err));
+            
+            // Allow the reload/close to happen (which will hit GET /startExam -> redirect to Home)
+            // Returning null suppresses the confirmation dialog
+            return null; 
+        }
+      };
+    };
+
+    // Handle Timer Auto-Submit
+    // (Note: The timer logic uses click() on endTestId, so it is covered)
+
+    // 5. Disable Keyboard Shortcuts (Ctrl+C, Ctrl+V, Alt+Tab prevention attempt)
+    document.onkeydown = function(e) {
+        if (e.ctrlKey && (e.keyCode === 67 || e.keyCode === 86 || e.keyCode === 85)) { // Ctrl+C, V, U
+            Swal.fire({
+                icon: 'error',
+                title: 'Action Blocked!',
+                text: 'Copy/Paste shortcuts are strictly prohibited.',
+                confirmButtonColor: '#ef4444',
+                timer: 2000,
+                timerProgressBar: true
+            });
+            return false;
+        }
     };
   </script>
 </body>

@@ -34,7 +34,12 @@
           </div>
           <div class="form-group mb-4">
             <label><i class="fas fa-lock mr-2"></i>Password</label>
-            <input name="password" type="password" class="form-control" placeholder="••••••••" required>
+            <div class="position-relative">
+              <input name="password" type="password" class="form-control" placeholder="••••••••" required id="passwordStudentRegister">
+              <i class="fas fa-eye position-absolute" 
+                 style="right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-dim);"
+                 onclick="togglePassword(this, 'passwordStudentRegister')"></i>
+            </div>
           </div>
 
           <button type="submit" class="btn-snoop w-100 justify-content-center">
