@@ -1,0 +1,251 @@
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="font-weight-bold" style="color: var(--text-base);">Live Monitor</h2>
+            <p class="text-dim mb-0">Test ID: <strong style="color: var(--primary);"><%= testID %></strong></p>
+        </div>
+        <div>
+            <span class="badge badge-pill badge-primary px-3 py-2 animate-pulse">
+                <i class="fas fa-broadcast-tower mr-2"></i> Live Connection Active
+            </span>
+            <a href="/teacher/showAllTests?filter=ongoing" class="btn-snoop-outline ml-3">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Tests
+            </a>
+        </div>
+    </div>
+
+    <style>
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .monitor-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            height: 100%;
+        }
+        .feed-container {
+            max-height: 500px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) transparent;
+        }
+        .feed-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .feed-container::-webkit-scrollbar-thumb {
+            background-color: var(--primary);
+            border-radius: 10px;
+        }
+        .feed-item {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            border-left: 4px solid transparent;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.3s ease;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .feed-item.join { border-left-color: #3b82f6; }
+        .feed-item.submit { border-left-color: #10b981; }
+        .feed-item.violation { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+        
+        .student-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .student-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+
+    <div class="row">
+        <!-- Live Activity Feed -->
+        <div class="col-lg-8 mb-4">
+            <div class="monitor-card d-flex flex-column">
+                <h5 class="font-weight-bold mb-4 border-bottom pb-2" style="border-color: var(--glass-border) !important;">
+                    <i class="fas fa-stream mr-2 text-primary"></i> Live Activity Feed
+                </h5>
+                <div class="feed-container flex-grow-1" id="activityFeed">
+                    <div class="text-center text-dim my-5" id="emptyFeedState">
+                        <i class="fas fa-satellite-dish fa-3x mb-3" style="opacity: 0.5;"></i>
+                        <p>Waiting for live activities...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Students Roster & Stats -->
+        <div class="col-lg-4 mb-4">
+            <div class="monitor-card mb-4" style="background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.05) 100%);">
+                <h5 class="font-weight-bold mb-3"><i class="fas fa-chart-pie mr-2 text-primary"></i> Live Overview</h5>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-light">Active Connections:</span>
+                    <strong class="text-primary fs-5" id="activeCount">0</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-light">Completed:</span>
+                    <strong class="text-success fs-5" id="completedCount">0</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-light">Violations Caught:</span>
+                    <strong class="text-danger fs-5" id="violationsCount">0</strong>
+                </div>
+            </div>
+
+            <div class="monitor-card d-flex flex-column" style="height: calc(100% - 170px);">
+                <h6 class="font-weight-bold mb-3 border-bottom pb-2" style="border-color: var(--glass-border) !important;">
+                    <i class="fas fa-users mr-2 text-primary"></i> Students Online
+                </h6>
+                <div class="feed-container flex-grow-1" id="studentList">
+                    <div class="text-center text-dim my-4" id="emptyStudentsState">
+                        <p class="small">No students connected yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Socket.IO client -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const testID = "<%= testID %>";
+    
+    // Join the teacher monitoring room
+    socket.emit('join_test_room', testID);
+
+    // State
+    let activeStudents = new Set();
+    let completedStudents = new Set();
+    let violations = 0;
+
+    // DOM Elements
+    const feed = document.getElementById('activityFeed');
+    const emptyFeedState = document.getElementById('emptyFeedState');
+    const studentList = document.getElementById('studentList');
+    const emptyStudentsState = document.getElementById('emptyStudentsState');
+    const activeCountEl = document.getElementById('activeCount');
+    const completedCountEl = document.getElementById('completedCount');
+    const violationsCountEl = document.getElementById('violationsCount');
+
+    function appendFeedItem(type, title, message, time) {
+        if(emptyFeedState) emptyFeedState.style.display = 'none';
+        
+        const item = document.createElement('div');
+        item.className = `feed-item ${type}`;
+        
+        // Define Icon based on type
+        let icon = 'fa-info-circle text-primary';
+        if(type === 'submit') icon = 'fa-check-circle text-success';
+        if(type === 'violation') icon = 'fa-exclamation-triangle text-danger';
+
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="d-flex">
+                    <i class="fas ${icon} mt-1 mr-3 fs-5"></i>
+                    <div>
+                        <h6 class="font-weight-bold mb-1" style="color: var(--text-base);">${title}</h6>
+                        <p class="mb-0 text-dim small">${message}</p>
+                    </div>
+                </div>
+                <span class="badge badge-secondary" style="background: rgba(255,255,255,0.1);">${new Date(time).toLocaleTimeString()}</span>
+            </div>
+        `;
+        
+        feed.insertBefore(item, feed.firstChild);
+    }
+
+    function updateStudentRoster() {
+        if (activeStudents.size > 0 || completedStudents.size > 0) {
+            emptyStudentsState.style.display = 'none';
+        }
+        
+        studentList.innerHTML = ''; // Re-render list
+        
+        activeStudents.forEach(email => {
+            const el = document.createElement('div');
+            el.className = 'student-item';
+            el.innerHTML = `
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; margin-right: 12px; box-shadow: 0 0 5px #3b82f6;"></div>
+                <span style="color: var(--text-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${email}">${email}</span>
+            `;
+            studentList.appendChild(el);
+        });
+        
+        completedStudents.forEach(email => {
+             const el = document.createElement('div');
+            el.className = 'student-item opacity-50';
+            el.innerHTML = `
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-right: 12px;"></div>
+                <span class="text-dim" style="text-decoration: line-through; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${email}">${email} (Submitted)</span>
+            `;
+            studentList.appendChild(el);
+        });
+
+        activeCountEl.innerText = activeStudents.size;
+        completedCountEl.innerText = completedStudents.size;
+    }
+
+    // Socket Listeners
+
+    // Custom Join Event (we need the client to emit this so we know who they are)
+    // We already have 'join_test_room' on backend, let's catch standard connection
+    // Or we will just rely on activity/submit to populate the roster.
+    
+    // We can infer a student joined if they emit any activity or submit. 
+    // Ideally, we'd add socket.emit('student_joined', {testID, studentEmail}) in studentTest.ejs as well.
+    // Let's listen for it anyway
+    socket.on('student_joined', (data) => {
+        if (!completedStudents.has(data.studentEmail) && !activeStudents.has(data.studentEmail)) {
+            activeStudents.add(data.studentEmail);
+            updateStudentRoster();
+            appendFeedItem('join', 'Student Joined', `${data.studentEmail} has entered the examination.`, new Date().toISOString());
+        }
+    });
+
+    socket.on('live_activity_update', (data) => {
+        // Ensure student is in roster
+        activeStudents.add(data.studentEmail);
+        updateStudentRoster();
+        
+        violations++;
+        violationsCountEl.innerText = violations;
+
+        let title = "Suspicious Activity";
+        let message = `${data.studentEmail} triggered a generic warning.`;
+        
+        if (data.activityType === 'TAB_SWITCH') {
+            title = "Tab Switch Detected";
+            message = `<strong class="text-danger">${data.studentEmail}</strong> switched away from the test tab for ${data.details.durationSeconds.toFixed(1)}s.`;
+        } else if (data.activityType === 'FULLSCREEN_EXIT') {
+            title = "Fullscreen Exit Detected";
+            message = `<strong class="text-danger">${data.studentEmail}</strong> exited fullscreen mode for ${data.details.durationSeconds.toFixed(1)}s.`;
+        }
+
+        appendFeedItem('violation', title, message, data.timestamp);
+    });
+
+    socket.on('live_submission_update', (data) => {
+        activeStudents.delete(data.studentEmail);
+        completedStudents.add(data.studentEmail);
+        updateStudentRoster();
+        
+        appendFeedItem('submit', 'Test Submitted', `${data.studentEmail} successfully submitted their test.`, new Date().toISOString());
+    });
+
+</script>

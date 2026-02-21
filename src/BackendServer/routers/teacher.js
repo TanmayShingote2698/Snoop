@@ -665,9 +665,9 @@ router.get("/showAllTests", checkAuthenticated, (req, res) => {
             console.log("Error parsing DB response:", e);
         }
 
-        // RBAC: Filter tests to show only those created by the logged-in teacher
+        // RBAC: Filter tests to show only those created by the logged-in teacher (or legacy tests with no creator)
         const userEmail = req.session.user.email;
-        let myTests = tests.filter(t => t.created_by === userEmail); 
+        let myTests = tests.filter(t => !t.created_by || t.created_by === userEmail); 
         
         // Apply status filter if provided (upcoming, ongoing, completed)
         const filter = req.query.filter;
@@ -676,14 +676,32 @@ router.get("/showAllTests", checkAuthenticated, (req, res) => {
         if (filter) {
             const now = new Date();
             myTests = myTests.filter(t => {
-                const start = t.startTime ? new Date(t.startTime) : null;
-                const end = t.endTime ? new Date(t.endTime) : null;
+                // Parse dates and verify they are valid
+                let start = null;
+                let end = null;
                 
-                if (!start || !end) return filter === 'ongoing'; // No time = ongoing
+                if (t.startTime) {
+                    const parsedStart = new Date(t.startTime);
+                    if (!isNaN(parsedStart.getTime())) start = parsedStart;
+                }
                 
-                if (filter === 'upcoming') return now < start;
-                if (filter === 'ongoing') return now >= start && now <= end;
-                if (filter === 'completed') return now > end;
+                if (t.endTime) {
+                    const parsedEnd = new Date(t.endTime);
+                    if (!isNaN(parsedEnd.getTime())) end = parsedEnd;
+                }
+                
+                // If a test doesn't have a valid start AND end, we only show it if the ongoing filter is active
+                if (!start || !end) {
+                    return filter === 'ongoing';
+                }
+                
+                if (filter === 'upcoming') {
+                    return now < start;
+                } else if (filter === 'ongoing') {
+                    return now >= start && now <= end;
+                } else if (filter === 'completed') {
+                    return now > end;
+                }
                 return true;
             });
             
@@ -693,13 +711,109 @@ router.get("/showAllTests", checkAuthenticated, (req, res) => {
         }
         
         console.log(`\n🕵️ RBAC View: User ${userEmail} sees ${myTests.length} tests (filter: ${filter || 'none'})`);
+        
+        // Debug logs to see what dates are being compared
+        if (myTests.length > 0) {
+            console.log(`First test start: ${myTests[0].startTime}`);
+            console.log(`First test end: ${myTests[0].endTime}`);
+            console.log(`Current server time: ${new Date().toISOString()}`);
+        }
 
         res.render("showAllTests", {
             tests: myTests,
             hideHome: true,
             pageTitle: pageTitle,
-            activeFilter: filter || 'all'
+            activeFilter: filter || 'all',
+            currentPage: (filter === 'completed') ? 'results' : 'view_tests'
         });
+    });
+});
+
+// Show Admin Detailed Results
+router.post("/resultDetails", checkAuthenticated, (req, res) => {
+    let testID = req.body.testID;
+    
+    // Call ResultServer to get detailed results
+    const options = {
+        url: 'http://127.0.0.1:200/getTestResult',
+        json: true,
+        body: {
+            'test_id': testID
+        }
+    };
+
+    request.post(options, (err, resp, body) => {
+        if (err) {
+            console.error("Error fetching results:", err);
+            req.session.errorMessage = "Failed to fetch results from server.";
+            return res.redirect("/teacher/showAllTests?filter=completed");
+        }
+        
+        // Parse and enrich the data with proctoring analytics
+        let resultsData = [];
+        if (body && body.result && Array.isArray(body.result)) {
+            resultsData = body.result.map(r => {
+                let tabSwitchCount = 0;
+                let totalTimeExited = 0;
+                let fullscreenExits = 0;
+                
+                try {
+                    // ResultServer might return tab_switch_data as a JSON string or Array
+                    const tabData = (typeof r.tab_switch_data === 'string') ? JSON.parse(r.tab_switch_data) : (r.tab_switch_data || []);
+                    
+                    // Calculate exact counts and duration from the real data schema
+                    tabData.forEach(event => {
+                        // The frontend sends `type` like 'TAB_SWITCH' or 'FULLSCREEN_EXIT'
+                        const evtType = event.type || event.eventType || event.action;
+                        
+                        if (evtType && typeof evtType === 'string') {
+                            const upperType = evtType.toUpperCase();
+                            if (upperType === 'TAB_SWITCH' || upperType === 'TAB_HIDDEN' || upperType === 'TAB_SWITCHED') {
+                                tabSwitchCount++;
+                            }
+                            if (upperType === 'FULLSCREEN_EXIT' || upperType === 'FULLSCREEN_EXITED') {
+                                fullscreenExits++;
+                            }
+                        }
+                        
+                        // Use exact duration if provided, otherwise fallback estimate
+                        if (event.durationSeconds) {
+                            totalTimeExited += event.durationSeconds;
+                        } else if (evtType) {
+                            totalTimeExited += 5; // Fallback estimate
+                        }
+                    });
+                    
+                    // Round the total time to 1 decimal place for cleaner display
+                    totalTimeExited = Math.round(totalTimeExited * 10) / 10;
+                } catch(e) {
+                    console.error("Error parsing tab data for student:", r.email, e);
+                }
+                
+                return {
+                    ...r,
+                    tabSwitchCount,
+                    fullscreenExits,
+                    totalTimeExited
+                };
+            });
+        }
+        
+        res.render("teacherResultDetails", {
+            testID: testID,
+            results: resultsData,
+            hideHome: true,
+            currentPage: 'results'
+        });
+    });
+});
+
+// Show Real-Time Live Monitor Dashboard
+router.get("/liveMonitor/:testID", checkAuthenticated, (req, res) => {
+    res.render("teacherLiveMonitor", {
+        testID: req.params.testID,
+        hideHome: true,
+        currentPage: 'ongoing'
     });
 });
 
@@ -869,8 +983,7 @@ router.get("/home", checkAuthenticated, (req, res) => {
                     }
                 }
             } else {
-                ongoing++;
-                status = 'ongoing';
+                status = 'no-schedule';
                 timeInfo = 'No time set';
             }
             
