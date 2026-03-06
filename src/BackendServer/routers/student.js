@@ -9,21 +9,21 @@ const SALT_ROUNDS = 12;
 
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-require("dotenv").config();
+require("dotenv").config({ path: path.resolve(__dirname, '../../.env') });
 
 // Cloudinary Configuration
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'snoop_students',
-        allowed_formats: ['jpg', 'png', 'jpeg'],
-    },
+  cloudinary: cloudinary,
+  params: {
+    folder: 'snoop_students',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+  },
 });
 
 const upload = multer({ storage: storage });
@@ -85,7 +85,7 @@ router.post("/login", async (req, res) => {
     // Set Session
     const userName = body['name'] || inputEmail.split('@')[0];
     const userPhoto = body['photo_url'] || '/public/default-avatar.png'; // Fallback if null
-    
+
     req.session.user = {
       role: 'student',
       email: inputEmail,
@@ -109,6 +109,7 @@ router.post("/register", upload.single('photo'), async (req, res) => {
 
   let inputEmail = req.body.email.toLowerCase();
   let inputName = req.body.name;
+  let inputStudentID = req.body.student_id;
   let inputPassword = req.body.password;
   // SECURITY FIX: Password sent to server for bcrypt hashing (no more MD5)
 
@@ -117,6 +118,7 @@ router.post("/register", upload.single('photo'), async (req, res) => {
 
   console.log(inputEmail);
   console.log(inputName);
+  console.log("Student ID:", inputStudentID);
 
   const options = {
     url: 'http://127.0.0.1:300/' + 'addStudent',
@@ -124,6 +126,7 @@ router.post("/register", upload.single('photo'), async (req, res) => {
     body: {
       'name': inputName,
       'email': inputEmail,
+      'student_id': inputStudentID,
       'password': inputPassword,
       'photo_url': photoUrl
     }
@@ -189,16 +192,6 @@ router.post("/showAllTests", checkAuthenticated, (req, res) => {
 
 // Give Test
 router.post("/takeTest", checkAuthenticated, (req, res) => {
-  // AI Proctoring: Start Anomaly Server EARLIER (during DB/Sync processing)
-  const anomalyOptions = {
-    url: 'http://127.0.0.1:5001/start',
-    method: 'POST'
-  };
-  request.post(anomalyOptions, (err, resp, body) => {
-    if (err) console.log("Anomaly Server Early Trigger Error:", err.message);
-    else console.log("Anomaly Server Early Trigger Response:", body);
-  });
-
   // Always fetch the live tests array from the teacher module source of truth
   const teacherModule = require("./teacher");
   const liveTests = teacherModule.tests;
@@ -299,32 +292,32 @@ router.post("/takeTest", checkAuthenticated, (req, res) => {
 
   // --- TIME WINDOW VALIDATION (START) ---
   if (test.startTime && test.endTime) {
-      const now = new Date();
-      const start = new Date(test.startTime);
-      const end = new Date(test.endTime);
+    const now = new Date();
+    const start = new Date(test.startTime);
+    const end = new Date(test.endTime);
 
-      if (now < start) {
-          return res.redirect("/student/home?error=" + encodeURIComponent(`Test has not started yet. Starts at: ${start.toLocaleString()}`));
-      }
-      
-      if (now > end) {
-          return res.redirect("/student/home?error=" + encodeURIComponent("Test has expired. Access denied."));
-      }
+    if (now < start) {
+      return res.redirect("/student/home?error=" + encodeURIComponent(`Test has not started yet. Starts at: ${start.toLocaleString()}`));
+    }
+
+    if (now > end) {
+      return res.redirect("/student/home?error=" + encodeURIComponent("Test has expired. Access denied."));
+    }
   }
   // --- TIME WINDOW VALIDATION (END) ---
 
-    // res.render("testInstructions", {    <-- OLD
-    //   test,
-    //   email: req.body.email,
-    //   hideHome: true
-    // });
-    
-    // NEW FLOW: Render Instructions First
-    res.render("testInstructions", {
-      test,
-      email: req.body.email,
-      hideHome: true
-    });
+  // res.render("testInstructions", {    <-- OLD
+  //   test,
+  //   email: req.body.email,
+  //   hideHome: true
+  // });
+
+  // NEW FLOW: Render Instructions First
+  res.render("testInstructions", {
+    test,
+    email: req.body.email,
+    hideHome: true
+  });
 });
 
 // NEW ROUTE: System Check (Called from Instructions page)
@@ -383,7 +376,7 @@ router.post("/startExam", checkAuthenticated, (req, res) => {
 
 // Handle reload (GET /startExam) -> Redirect to home (prevents "Cannot GET" error)
 router.get("/startExam", (req, res) => {
-    return res.redirect("/student/home?error=" + encodeURIComponent("Test session terminated due to page reload."));
+  return res.redirect("/student/home?error=" + encodeURIComponent("Test session terminated due to page reload."));
 });
 
 // Route for accepting test responses from students
@@ -425,42 +418,28 @@ router.post('/submitTest', (req, res) => {
   }
   responseOfStudent.qna = qna;
 
-  // AI Proctoring: Stop Anomaly Server and get score
-  const anomalyStopOptions = {
-    url: 'http://127.0.0.1:5001/stop',
-    method: 'POST',
-    json: true
+  // AI Proctoring: Anomaly Server removed. Defaulting integrity score to 100.
+  let integrityScore = 100;
+
+  const options = {
+    url: 'http://127.0.0.1:200/' + 'scoreAndStore',
+    json: true,
+    body: {
+      'response': {
+        "testID": responseOfStudent.testID,
+        "studentEmail": responseOfStudent.studentEmail,
+        "qna": responseOfStudent.qna,
+        "integrity": integrityScore,
+        "tabSwitchData": req.body.tabSwitchData ? JSON.parse(req.body.tabSwitchData) : []
+      }
+    }
   };
 
-  request.post(anomalyStopOptions, (anomalyErr, anomalyResp, anomalyBody) => {
-    let integrityScore = 100; // Default
-    if (!anomalyErr && anomalyBody && anomalyBody.status === 'success') {
-      integrityScore = anomalyBody.score;
-      console.log("Final Integrity Score from AI:", integrityScore);
-    } else {
-      console.log("Anomaly Server Stop Error or invalid response:", anomalyErr || anomalyBody);
+  request.post(options, (err, resp, body) => {
+    if (err) {
+      return console.log(err);
     }
-
-    const options = {
-      url: 'http://127.0.0.1:200/' + 'scoreAndStore',
-      json: true,
-      body: {
-        'response': {
-          "testID": responseOfStudent.testID,
-          "studentEmail": responseOfStudent.studentEmail,
-          "qna": responseOfStudent.qna,
-          "integrity": integrityScore, // Pass real score
-          "tabSwitchData": req.body.tabSwitchData ? JSON.parse(req.body.tabSwitchData) : [] // Parse hidden input
-        }
-      }
-    };
-
-    request.post(options, (err, resp, body) => {
-      if (err) {
-        return console.log(err);
-      }
-      res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&success=" + encodeURIComponent("Examination submitted successfully! Check your results below."));
-    });
+    res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&success=" + encodeURIComponent("Examination submitted successfully! Check your results below."));
   });
 
 })
@@ -490,8 +469,9 @@ router.post('/GetResultByEmail', (req, res) => {
     console.log(body);
 
     res.render('showResultUsingEmail', {
-      results: body.result,
-      hideHome: true
+      results: (body && body.result) ? body.result : [],
+      hideHome: true,
+      error: (body && body.message) ? body.message : null
     })
   });
 

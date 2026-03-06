@@ -5,12 +5,16 @@ from dotenv import load_dotenv
 from dbManager import dbManager
 import random
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from project root
+load_dotenv('../../.env')
 
 app = Flask(__name__)
 api= Api(app)
 app.config['SECRET_KEY'] = os.getenv('JWT_SECRET', 'mysecretkey')
+
+# Initialize DB globally
+db = dbManager()
+db.connect()
 
 # Health Check Endpoint
 @app.route('/health')
@@ -26,13 +30,12 @@ class getStudentResult(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('studentEmail', type=str, required=True, help="This field cannot be left blank.")
     def __init__(self):
-        db.connect()
+        pass
   
     def post(self):
-        print("post was called")
-        headers: { "Accept": "application/json", "Content-type": "application/json",}
+        print("getStudentResult was called")
         found =getStudentResult.parser.parse_args()["studentEmail"]
-        query = "SELECT * FROM result where email='" + found+"'"
+        query = f"SELECT * FROM result where email='{found}'"
         result = db.runQuery(str(query))
         bigjson = []
         for r in result :
@@ -56,13 +59,13 @@ class getTestResult(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('test_id', type=str, required=True, help="This field cannot be left blank.")
     def __init__(self):
-        db.connect()
+        pass
     
     def post(self):
-        print("post test was called")
-        headers: { "Accept": "application/json", "Content-type": "application/json",}
+        print("getTestResult was called")
         found =getTestResult.parser.parse_args()["test_id"]
-        query = "SELECT * FROM result where test_id=" + found
+        # Fix: Quote test_id for alphanumeric support
+        query = f"SELECT * FROM result where test_id='{found}'"
         result = db.runQuery(str(query))
         bigjson = []
         for r in result :
@@ -88,14 +91,14 @@ class getStudentResponse(Resource):
     parser.add_argument('studentEmail', type=str, required=True, help="This field cannot be left blank.")
     parser.add_argument('test_id', type=str, required=True, help="This field cannot be left blank.")
     def __init__(self):
-        db.connect()
+        pass
     
     def post(self):
-        print("post student response was called")
-        headers: { "Accept": "application/json", "Content-type": "application/json",}
+        print("getStudentResponse was called")
         s_email = getStudentResponse.parser.parse_args()["studentEmail"]
         t_id = getStudentResponse.parser.parse_args()["test_id"]
-        query = "SELECT * FROM result where test_id=" + t_id + " and email='" + s_email+"'"
+        # Fix: Quote test_id and email
+        query = f"SELECT * FROM result where test_id='{t_id}' and email='{s_email}'"
         result = db.runQuery(str(query))
         bigjson = []
         for r in result :
@@ -120,11 +123,10 @@ class scoreAndStore(Resource):
     parser.add_argument('response', type=dict, required=True, help="This field cannot be left blank.")
     
     def __init__(self):
-        db.connect()
+        pass
     
     def post(self):
         print("score and store was called")
-        headers: { "Accept": "application/json", "Content-type": "application/json",}
         response = scoreAndStore.parser.parse_args()["response"]
         print(type(response))
         t_id = str(response["testID"])
@@ -132,6 +134,7 @@ class scoreAndStore(Resource):
         print(f"Response:{response}")
         
         # Fetch actual student_id from database
+        # Fix: Quote email
         student_query = f"SELECT student_id FROM student WHERE email='{email}'"
         student_data = db.runQuery(student_query)
         if student_data and len(student_data) > 0:
@@ -149,15 +152,18 @@ class scoreAndStore(Resource):
         qna = response["qna"]
         print("=======================================")
         for q in qna:
+            student_ans = q.get('studentAnswer')
+            actual_ans = q.get('actualAnswer')
+            
             print(f"q:{q}")
-            print(f"qActual:{q['actualAnswer']}")
-            print(f"qStudent:{q['studentAnswer']}")
+            print(f"qActual:{actual_ans}")
+            print(f"qStudent:{student_ans}")
 
-
-            if(q["actualAnswer"]!="This is a sbjective question"):
-                if(q["actualAnswer"]==q["studentAnswer"]):
-                    mcq_score = mcq_score +1
-            answers.append(q["studentAnswer"])
+            if actual_ans and actual_ans != "This is a sbjective question":
+                if actual_ans == student_ans:
+                    mcq_score = mcq_score + 1
+            
+            answers.append(student_ans if student_ans is not None else "")
         print("================================================")
         # print(qna)
         # print(type(qna))
@@ -182,8 +188,12 @@ class scoreAndStore(Resource):
         result = db.insertEntry("result",jsondata)
         print(result)
 
+        if not result:
+            return jsonify({"result": "fail", "message": "Database insertion failed. Please ensure 'tab_switch_data' column (JSONB) exists in 'result' table."}), 500
+
         # Update student's tests_given count
         try:
+            # Fix: Quote email
             student_data_query = f"SELECT tests_given FROM student WHERE email='{email}'"
             student_profile = db.runQuery(student_data_query)
             if student_profile:
@@ -208,7 +218,6 @@ api.add_resource(getStudentResponse, '/getStudentResponse')
 api.add_resource(scoreAndStore, '/scoreAndStore')
 
 if __name__ == "__main__":
-    db = dbManager()
     port = int(os.getenv('RESULT_SERVER_PORT', 200))
     print(f"Starting Result Server on port {port}...")
     # Disable reloader to prevent MemoryError on Windows with large directory structures

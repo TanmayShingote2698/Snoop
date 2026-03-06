@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from auth_functions import authFunctions
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from project root
+load_dotenv('../../.env')
 
 app = Flask(__name__)
 api= Api(app)
@@ -28,6 +28,7 @@ class AddStudent(Resource):
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('name',type=str,required=True,help="This field cannot be left blank.")
         self.parser.add_argument('email',type=str,required=True,help="This field cannot be left blank.")
+        self.parser.add_argument('student_id',type=str,required=True,help="This field cannot be left blank.")
         self.parser.add_argument('password',type=str,required=True,help="This field cannot be left blank.")
         self.parser.add_argument('photo_url',type=str,required=True,help="This field cannot be left blank.")
 
@@ -38,6 +39,7 @@ class AddStudent(Resource):
         print(response)
         result = authFunc.addStudent(0,response['name'],
                             response['email'],
+                            response['student_id'],
                             response['photo_url'],
                             response['password'])
 
