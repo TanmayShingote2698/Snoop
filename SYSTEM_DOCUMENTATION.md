@@ -16,7 +16,6 @@ Snoop system/
 ├── 📄 stop_all_servers.bat      # Stop all servers
 ├── 📁 Documents/                # PDF documentation
 ├── 📁 src/
-│   ├── 📁 AnomalyServer/        # AI Proctoring
 │   ├── 📁 AuthServer/           # Authentication
 │   ├── 📁 BackendServer/        # Main Web App
 │   ├── 📁 ResultServer/         # Scoring & Results
@@ -85,119 +84,6 @@ copy .env.example .env
 2. Kills all Node.js processes
 
 **Usage:** Double-click to run
-
----
-
-# 🤖 ANOMALY SERVER (AI Proctoring)
-
-**Location:** `src/AnomalyServer/`  
-**Technology:** Python, OpenCV, dlib, face_recognition  
-**Purpose:** AI-powered exam proctoring to detect cheating
-
----
-
-## Server.py
-**Purpose:** Main orchestrator that runs all AI detection modules
-
-**How it works:**
-```python
-# Initialize all detection modules
-fr = FaceRecognition(user_image, user_id)
-ld = LandmarkDetection()
-ud = UpperBodyDetection()
-mt = MotionTracking()
-
-# Process each video frame
-while True:
-    ret, frame = video.read()
-    fr.run(frame, result)    # Check face
-    ld.run(frame, result)    # Check gaze
-    ud.run(frame, result)    # Check body
-    mt.run(frame, result)    # Check motion
-```
-
-**Output:** Integrity score combining all detection results
-
----
-
-## FaceRecognition.py
-**Purpose:** Verify student identity during exam
-
-**Detects:**
-| Issue | Threshold | Warning |
-|-------|-----------|---------|
-| No person visible | 50 frames | "No one detected!" |
-| Multiple people | 30 frames | "More than one person!" |
-| Wrong person | 50 frames | "Verified User Not found!" |
-
-**How it works:**
-1. Loads registered student's face encoding
-2. Compares each frame against stored encoding
-3. Uses face_recognition library (threshold: 0.6)
-4. Tracks warning counts and frame statistics
-
----
-
-## LandmarkDetection.py
-**Purpose:** Track head pose and gaze direction
-
-**Detects:**
-- Looking Left (angle < -15°)
-- Looking Right (angle > 15°)
-- Looking Forward
-
-**How it works:**
-1. Uses dlib's 68-point facial landmark predictor
-2. Calculates 3D head pose using OpenCV PnP algorithm
-3. Logs timestamps when student looks away
-
----
-
-## MotionTracking.py
-**Purpose:** Detect significant movement during exam
-
-**How it works:**
-1. Compares current frame with background
-2. Uses Gaussian blur and thresholding
-3. Ignores small movements (< 10000 pixel area)
-4. Records start/end times of motion events
-
----
-
-## UpperBodyDetection.py
-**Purpose:** Detect additional people nearby
-
-**How it works:**
-1. Uses Haar Cascade classifier for upper body detection
-2. Logs timestamps when extra person detected
-
----
-
-## utils/drawFace.py
-**Purpose:** Draw facial landmarks on video for debugging
-
-**Draws:** Jawline, eyebrows, nose, eyes, mouth outlines
-
----
-
-## utils/reference_world.py
-**Purpose:** 3D reference model for head pose estimation
-
-**Functions:**
-- `ref3DModel()` - Standard 3D face coordinates
-- `ref2dImagePoints()` - Map 2D landmarks to 3D
-- `cameraMatrix()` - Camera intrinsic matrix
-
----
-
-## weights/ folder
-**Purpose:** Pre-trained AI models
-
-| File | Purpose |
-|------|---------|
-| `haarcascade_frontalface_default.xml` | Face detection model |
-| `haarcascade_upperbody.xml` | Upper body detection model |
-| `shape_predictor_68_face_landmarks.dat` | Facial landmark model |
 
 ---
 
@@ -426,12 +312,11 @@ while True:
 | Category | Files |
 |----------|-------|
 | Configuration & Scripts | 5 |
-| AnomalyServer | 9 |
 | AuthServer | 3 |
 | TestServer | 3 |
 | ResultServer | 3 |
 | BackendServer | 25+ |
-| **Total** | **48+** |
+| **Total** | **39+** |
 
 ---
 
@@ -444,7 +329,7 @@ User → BackendServer (5000)
          ↓
     [Create Test] → TestServer (100) → Oracle DB
          ↓
-    [Take Exam] → AnomalyServer (AI) + ResultServer (200) → Oracle DB
+    [Take Exam] → ResultServer (200) → Oracle DB
          ↓
     [View Results] → ResultServer (200) → Oracle DB
 ```

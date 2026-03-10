@@ -82,12 +82,30 @@
                         <form action="/student/systemCheck" method="POST">
                             <input type="hidden" name="email" value="<%= email %>">
                             <input type="hidden" name="testID" value="<%= test.id %>">
+                            <input type="hidden" name="email" id="studentEmail" value="<%= email %>">
+                            <input type="hidden" name="testID" id="testId" value="<%= test.id %>">
                             <button type="submit" class="btn-snoop px-5" id="proceedBtn" disabled style="opacity: 0.5; cursor: not-allowed;">
                                 Agree & Proceed <i class="fas fa-arrow-right ml-2"></i>
                             </button>
                         </form>
                     </div>
 
+                    <script>
+                        window.onload = function() {
+                            const emailInput = document.getElementById('studentEmail');
+                            const testIdInput = document.getElementById('testId');
+
+                            const storedEmail = localStorage.getItem('studentEmail');
+                            const storedTestId = localStorage.getItem('testId');
+
+                            if (storedEmail) {
+                                emailInput.value = storedEmail;
+                            }
+                            if (storedTestId) {
+                                testIdInput.value = storedTestId;
+                            }
+                        };
+                    </script>
                     <script>
                         function toggleProceed() {
                             const checkbox = document.getElementById('consentCheck');
@@ -103,7 +121,3 @@
                             }
                         }
                     </script>
-                </div>
-            </div>
-        </div>
-    </div>

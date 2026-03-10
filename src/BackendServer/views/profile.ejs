@@ -1,0 +1,123 @@
+<div class="row justify-content-center" style="margin-top: 5px;">
+    <div class="col-md-8 col-lg-6">
+        <h2 class="mb-4 font-weight-bold" style="color: var(--text-main);">Edit Profile</h2>
+        
+        <% if (locals.success) { %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle mr-2"></i> <%= locals.success %>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        <% } %>
+
+        <% if (locals.error) { %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle mr-2"></i> <%= locals.error %>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        <% } %>
+
+        <div class="glass-card mb-4">
+            <form action="/<%= locals.user.role %>/profile" method="POST" enctype="multipart/form-data">
+                
+                <div class="text-center mb-4">
+                    <div class="position-relative d-inline-block">
+                        <img id="profilePreview" src="<%= locals.user.photo_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(locals.user.name) %>" class="rounded-circle shadow" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid var(--primary);">
+                        <label for="photo" class="position-absolute d-flex align-items-center justify-content-center bg-white rounded-circle shadow-sm" style="width: 35px; height: 35px; bottom: 0; right: 0; cursor: pointer; border: 1px solid var(--glass-border);">
+                            <i class="fas fa-camera text-primary"></i>
+                        </label>
+                        <input type="file" id="photo" name="photo" class="d-none" accept="image/*" onchange="previewImage(this)">
+                    </div>
+                    <p class="text-dim mt-2 small">Click icon to change photo</p>
+                </div>
+
+                <div class="form-group mb-4">
+                    <label for="name" class="font-weight-bold ml-1">Full Name</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-white border-right-0" style="border-radius: 0.75rem 0 0 0.75rem; border: 1px solid var(--glass-border); color: var(--text-dim);">
+                                <i class="fas fa-user border-0"></i>
+                            </span>
+                        </div>
+                        <input type="text" class="form-control border-left-0 pl-1" id="name" name="name" value="<%= locals.user.name %>" required style="border-radius: 0 0.75rem 0.75rem 0;">
+                    </div>
+                </div>
+
+                <div class="form-group mb-4">
+                    <label for="email" class="font-weight-bold ml-1">Email Address <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-light border-right-0" style="border-radius: 0.75rem 0 0 0.75rem; border: 1px solid var(--glass-border); color: var(--text-dim);">
+                                <i class="fas fa-envelope border-0"></i>
+                            </span>
+                        </div>
+                        <input type="email" class="form-control border-left-0 pl-1 bg-light" id="email" value="<%= locals.user.email %>" readonly disabled style="border-radius: 0 0.75rem 0.75rem 0; cursor: not-allowed;">
+                    </div>
+                    <small class="form-text text-muted ml-1 mt-1">Email cannot be changed.</small>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn-snoop rounded-pill px-5">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('profilePreview').src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            var bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+    
+    // Check URL params for success/error if sent via redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const errorMsg = urlParams.get('error');
+    
+    if(success) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: decodeURIComponent(success),
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000
+        });
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    if(errorMsg) {
+         Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: decodeURIComponent(errorMsg),
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000
+        });
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+</script>
