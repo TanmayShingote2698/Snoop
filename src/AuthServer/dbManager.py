@@ -6,7 +6,8 @@ from supabase import create_client, Client
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+load_dotenv(dotenv_path=env_path)
 
 class dbManager:
     """Database manager for Supabase"""

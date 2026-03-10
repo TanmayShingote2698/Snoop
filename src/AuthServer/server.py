@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from auth_functions import authFunctions
 
-# Load environment variables
-load_dotenv()
+env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+load_dotenv(dotenv_path=env_path)
 
 app = Flask(__name__)
 api= Api(app)
@@ -42,9 +42,9 @@ class AddStudent(Resource):
                             response['password'])
 
         if result:
-            return jsonify({'userAdded':'Success'})
+            return {'userAdded':'Success'}
         else:
-            return jsonify({'userAdded':'Fail', 'message': 'Database Error or Duplicate User'}), 400
+            return {'userAdded':'Fail', 'message': 'Database Error or Duplicate User'}, 400
 
 class AddAdmin(Resource):
     def __init__(self):
@@ -63,9 +63,9 @@ class AddAdmin(Resource):
                             response['password'])
 
         if result:
-            return jsonify({'adminAdd':'Success'})
+            return {'adminAdd':'Success'}
         else:
-            return jsonify({'adminAdd':'Fail', 'message': 'Database Error or Duplicate Admin'}), 400
+            return {'adminAdd':'Fail', 'message': 'Database Error or Duplicate Admin'}, 400
 
 class verifyStudent(Resource):
     def __init__(self):
@@ -82,13 +82,13 @@ class verifyStudent(Resource):
         result = authFunc.verifyStudent(response['email'], response['password'])
 
         if result and isinstance(result, dict) and result.get('status'):
-            return jsonify({
+            return {
                 'verify':'Success', 
                 'name': result.get('name'),
                 'photo_url': result.get('photo_url')
-            })    
+            }    
 
-        return jsonify({'verify':'Fail'})
+        return {'verify':'Fail'}
 
 class verifyAdmin(Resource):
     def __init__(self):
@@ -105,9 +105,9 @@ class verifyAdmin(Resource):
         result = authFunc.verifyAdmin(response['email'], response['password'])
 
         if result and isinstance(result, dict) and result.get('status'):
-            return jsonify({'verify':'Success', 'name': result.get('name')})    
+            return {'verify':'Success', 'name': result.get('name')}    
 
-        return jsonify({'verify':'Fail'})
+        return {'verify':'Fail'}
 
 
 class validateStudent(Resource):
@@ -124,9 +124,9 @@ class validateStudent(Resource):
         validStudent = authFunc.validateStudent(response['studentID'],
                             response['imageURL'])
         if validStudent:
-            return jsonify({'validation':'Success'})
+            return {'validation':'Success'}
 
-        return jsonify({'validation':'Fail'})
+        return {'validation':'Fail'}
 
 
 
@@ -150,9 +150,9 @@ class UpdatePassword(Resource):
         success = authFunc.updatePassword(args['email'], args['password'])
         
         if success:
-            return jsonify({'status': 'success', 'message': 'Password updated successfully'})
+            return {'status': 'success', 'message': 'Password updated successfully'}
         else:
-            return jsonify({'status': 'fail', 'message': 'User not found or database error'}), 400
+            return {'status': 'fail', 'message': 'User not found or database error'}, 400
 
 api.add_resource(UpdatePassword, '/updatePassword')
 

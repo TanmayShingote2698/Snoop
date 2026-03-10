@@ -1,0 +1,113 @@
+{
+    "result": [
+        {
+            "student_id": 11252,
+            "email": "maheshsumbpatil87@gmail.com",
+            "test_id": "INSEM_1",
+            "mcq_score": 4,
+            "final_score": 4,
+            "generated": false,
+            "answers": [
+                "1",
+                "bhg",
+                "kkccj"
+            ],
+            "integrity": 21,
+            "subjective_score": 20,
+            "tab_switch_data": []
+        },
+        {
+            "student_id": 7224,
+            "email": "maheshsumbpatil87@gmail.com",
+            "test_id": "INSEM_1",
+            "mcq_score": 1,
+            "final_score": 6,
+            "generated": false,
+            "answers": [
+                "",
+                "",
+                ""
+            ],
+            "integrity": 12,
+            "subjective_score": 11,
+            "tab_switch_data": []
+        },
+        {
+            "student_id": 1,
+            "email": "maheshsumbpatil87@gmail.com",
+            "test_id": "INSEM_1",
+            "mcq_score": 0,
+            "final_score": 1,
+            "generated": false,
+            "answers": [
+                "",
+                "",
+                ""
+            ],
+            "integrity": 100,
+            "subjective_score": 2,
+            "tab_switch_data": []
+        },
+        {
+            "student_id": 1,
+            "email": "maheshsumbpatil87@gmail.com",
+            "test_id": "INSEM_1",
+            "mcq_score": 0,
+            "final_score": 3,
+            "generated": false,
+            "answers": [
+                "",
+                "",
+                ""
+            ],
+            "integrity": 100,
+            "subjective_score": 2,
+            "tab_switch_data": []
+        },
+        {
+            "student_id": 1,
+            "email": "maheshsumbpatil87@gmail.com",
+            "test_id": "INSEM_1",
+            "mcq_score": 0,
+            "final_score": 4,
+            "generated": false,
+            "answers": [
+                "",
+                "",
+                ""
+            ],
+            "integrity": 100,
+            "subjective_score": 5,
+            "tab_switch_data": []
+        },
+        {
+            "student_id": 1,
+            "email": "maheshsumbpatil87@gmail.com",
+            "test_id": "INSEM_1",
+            "mcq_score": 0,
+            "final_score": 2,
+            "generated": false,
+            "answers": [
+                "",
+                "",
+                ""
+            ],
+            "integrity": 100,
+            "subjective_score": 18,
+            "tab_switch_data": [
+                {
+                    "type": "TAB_SWITCH",
+                    "endTime": "2026-02-11T17:49:52.252Z",
+                    "startTime": "2026-02-11T17:49:35.425Z",
+                    "durationSeconds": 16.827
+                },
+                {
+                    "type": "FULLSCREEN_EXIT",
+                    "endTime": "2026-02-11T17:50:00.484Z",
+                    "startTime": "2026-02-11T17:49:55.082Z",
+                    "durationSeconds": 5.402
+                }
+            ]
+        }
+    ]
+}

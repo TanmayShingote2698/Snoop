@@ -1,12 +1,12 @@
-from flask import Flask, request,jsonify,redirect, url_for,  make_response
+from flask import Flask, request, jsonify, make_response
 from flask_restful import Resource, Api, reqparse
 import os
 from dotenv import load_dotenv
+
+env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+load_dotenv(dotenv_path=env_path)
 from dbManager import dbManager
 import random
-
-# Load environment variables
-load_dotenv()
 
 app = Flask(__name__)
 api= Api(app)
@@ -75,13 +75,14 @@ class getTestResult(Resource):
                 'generated':r['generated'],
                 'answers':r['answers'],
                 'integrity':r['integrity'],
-                'subjective_score':r['subjective_score']
+                'subjective_score':r['subjective_score'],
+                'tab_switch_data': r.get('tab_switch_data', [])
             }
             bigjson.append(jsondata)
         
     
         data = {"result": bigjson}
-        return jsonify(data)
+        return data
 
 class getStudentResponse(Resource):
     parser = reqparse.RequestParser()

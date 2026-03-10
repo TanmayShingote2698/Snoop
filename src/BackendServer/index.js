@@ -94,6 +94,53 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server started on ${PORT}`);
+// Create HTTP server and initialize Socket.IO
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server, {
+  cors: { origin: "*" } // Adjust in production
+});
+
+// Pass io to router so it can be used in other files if needed
+app.set('io', io);
+
+// Handle Socket.IO connections
+io.on('connection', (socket) => {
+  console.log('⚡ A user connected via WebSocket:', socket.id);
+
+  // Join a specific test room (e.g., student joining a test or teacher monitoring)
+  socket.on('join_test_room', (testID) => {
+    socket.join(testID);
+    console.log(`📡 Socket ${socket.id} joined test room: ${testID}`);
+  });
+
+  // Handle student activity/violations
+  socket.on('student_activity', (data) => {
+    // data should contain { testID, studentEmail, activityType, timestamp, details }
+    const { testID } = data;
+    if (testID) {
+      // Broadcast this activity to the teacher monitoring this specific test room
+      io.to(testID).emit('live_activity_update', data);
+      console.log(`🚨 Activity broadcasted in room ${testID}:`, data.activityType);
+    }
+  });
+
+  // Handle student completion
+  socket.on('student_submitted', (data) => {
+    const { testID } = data;
+    if (testID) {
+      io.to(testID).emit('live_submission_update', data);
+      console.log(`✅ Submission broadcasted in room ${testID}:`, data.studentEmail);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ A user disconnected:', socket.id);
+  });
+});
+
+// Start the server (using server.listen instead of app.listen)
+server.listen(PORT, () => {
+  console.log(`Server started on ${PORT} (with WebSocket support)`);
 });

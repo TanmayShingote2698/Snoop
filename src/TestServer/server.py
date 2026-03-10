@@ -3,10 +3,11 @@ from flask_restful import Resource, Api, reqparse
 import os
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
+import time
 from test_functions import testFunction
 
-# Load environment variables
-load_dotenv()
+env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+load_dotenv(dotenv_path=env_path)
 
 app = Flask(__name__)
 api= Api(app)

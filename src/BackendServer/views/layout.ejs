@@ -521,7 +521,7 @@
         <a href="/teacher/showAllTests" class="list-group-item list-group-item-action bg-transparent second-text fw-bold <%= (locals.currentPage === 'view_tests') ? 'active' : '' %>">
             <i class="fas fa-list-ul mr-4"></i> <span class="sidebar-text">View Tests</span>
         </a>
-        <a href="#" class="list-group-item list-group-item-action bg-transparent second-text fw-bold <%= (locals.currentPage === 'results') ? 'active' : '' %>">
+        <a href="/teacher/showAllTests?filter=completed" class="list-group-item list-group-item-action bg-transparent second-text fw-bold <%= (locals.currentPage === 'results') ? 'active' : '' %>">
             <i class="fas fa-chart-line mr-4"></i> <span class="sidebar-text">Results</span>
         </a>
         <a href="#" class="list-group-item list-group-item-action bg-transparent second-text fw-bold <%= (locals.currentPage === 'students') ? 'active' : '' %>">

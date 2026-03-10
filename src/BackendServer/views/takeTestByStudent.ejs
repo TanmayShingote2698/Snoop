@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body>
@@ -223,16 +224,36 @@
     let awayStartTime = null;
     let fullscreenExitStartTime = null;
 
-    // Helper to log events
+    // --- REAL-TIME MONITORING (Socket.IO) ---
+    const socket = io(); // Connect to the WebSocket Server
+    const studentEmail = "<%= email %>";
+    const currentTestID = "<%= test.id %>";
+
+    // Join the specific test room immediately
+    socket.emit('join_test_room', currentTestID);
+
+    // Helper to log events (and emit them in real-time)
     function logEvent(type, startTime, endTime) {
         let duration = (endTime - startTime) / 1000;
-        proctoringLogs.push({
+        
+        const eventData = {
             type: type, // 'TAB_SWITCH' or 'FULLSCREEN_EXIT'
             startTime: startTime.toISOString(),
             endTime: endTime.toISOString(),
             durationSeconds: duration
-        });
+        };
+        
+        proctoringLogs.push(eventData);
         updateHiddenInput();
+
+        // Broadcast the violation to the teacher instantly
+        socket.emit('student_activity', {
+            testID: currentTestID,
+            studentEmail: studentEmail,
+            activityType: type,
+            timestamp: new Date().toISOString(),
+            details: eventData
+        });
     }
 
     function updateHiddenInput() {
@@ -344,6 +365,9 @@
 
     // Handle Submit Button Click (Ensures warnings are suppressed)
     document.getElementById('endTestId').onclick = function() {
+        if (!isSubmitting) {
+            socket.emit('student_submitted', { testID: currentTestID, studentEmail: studentEmail });
+        }
         isSubmitting = true;
     };
 
@@ -356,6 +380,9 @@
     
     // Also listen to the actual submit event
     document.getElementById('testFormID').addEventListener('submit', function() {
+        if (!isSubmitting) {
+            socket.emit('student_submitted', { testID: currentTestID, studentEmail: studentEmail });
+        }
         isSubmitting = true;
     });
 
