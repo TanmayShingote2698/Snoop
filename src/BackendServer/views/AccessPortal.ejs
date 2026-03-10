@@ -11,24 +11,16 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --primary: #00ff41;
-      --secondary: #003b00;
-      --bg-dark: #050505;
-      --bg-card: rgba(20, 20, 20, 0.9);
-      --text-main: #e5e5e5;
-      --text-dim: #a3a3a3;
-      --glass-border: rgba(0, 255, 65, 0.2);
-    }
-
-    /* Light Theme Variables */
-    body.light-theme {
-      --bg-dark: #f8fafc;
-      --bg-card: rgba(255, 255, 255, 0.7);
-      --primary: #16a34a;
-      --secondary: #14532d;
+      --primary: #D410AA;
+      --secondary: #b0078a;
+      --bg-dark: #F5F5F5;
+      --bg-start: #F5F5F5;
+      --bg-end: #E5E5E5;
+      --bg-card: rgba(255, 255, 255, 0.6);
       --text-main: #1e293b;
       --text-dim: #64748b;
-      --glass-border: rgba(22, 163, 74, 0.2);
+      --text-grad-start: #1e293b;
+      --text-grad-end: #D410AA;
     }
 
     * {
@@ -39,7 +31,7 @@
 
     body {
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, var(--bg-dark) 0%, #0a0a0a 100%);
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #E5E5E5 100%);
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
@@ -48,10 +40,6 @@
       margin: 0;
       overflow-x: hidden;
       transition: background 0.3s ease;
-    }
-
-    body.light-theme {
-      background: linear-gradient(135deg, var(--bg-dark) 0%, #e2e8f0 100%);
     }
 
     .hero-container {
@@ -115,7 +103,7 @@
 
     .role-card:hover {
       transform: translateY(-10px);
-      background: rgba(20, 20, 20, 1);
+      background: rgba(255, 255, 255, 1);
       border-color: var(--primary);
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
     }
@@ -123,7 +111,7 @@
     .icon-box {
       width: 64px;
       height: 64px;
-      background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(0, 59, 0, 0.3));
+      background: linear-gradient(135deg, rgba(212, 16, 170, 0.1), rgba(212, 16, 170, 0.3));
       border-radius: 1rem;
       display: flex;
       align-items: center;
@@ -137,7 +125,7 @@
       font-size: 1.5rem;
       font-weight: 600;
       margin-bottom: 0.75rem;
-      color: #fff;
+      color: #1A1A1A;
     }
 
     .role-desc {
@@ -158,7 +146,7 @@
       left: -50%;
       width: 200%;
       height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(0, 255, 65, 0.1), transparent);
+      background: linear-gradient(45deg, transparent, rgba(212, 16, 170, 0.1), transparent);
       transform: rotate(45deg);
       transition: 0.5s;
     }
@@ -200,7 +188,7 @@
 
     .back-button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 255, 65, 0.5);
+      box-shadow: 0 6px 20px rgba(212, 16, 170, 0.5);
     }
 
     .back-button svg {
@@ -223,60 +211,10 @@
       }
     }
 
-    /* Theme Toggle Button */
-    .theme-toggle {
-      position: fixed;
-      top: 2rem;
-      right: 2rem;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #fff;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-size: 1.2rem;
-    }
-
-    .theme-toggle:hover {
-      background: var(--primary);
-      color: white;
-      transform: rotate(15deg);
-      box-shadow: 0 4px 15px rgba(0, 255, 65, 0.3);
-    }
-
-    body.light-theme .theme-toggle {
-      background: rgba(0, 0, 0, 0.05);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      color: var(--text-main);
-    }
-
-    body.light-theme .theme-toggle:hover {
-      background: var(--primary);
-      color: white;
-      box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
-    }
-
-    @media (max-width: 640px) {
-      .theme-toggle {
-        top: 1.5rem;
-        right: 1.5rem;
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-      }
-    }
   </style>
 </head>
 
 <body>
-  <button class="theme-toggle" onclick="toggleTheme()" title="Switch Theme">
-    <i class="fas fa-sun" id="theme-icon"></i>
-  </button>
 
   <a href="/" class="back-button">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -318,39 +256,6 @@
     </div>
   </div>
 
-  <script>
-    // Theme Switcher Logic
-    function toggleTheme() {
-      const body = document.body;
-      const icon = document.getElementById('theme-icon');
-      
-      body.classList.toggle('light-theme');
-      
-      if (body.classList.contains('light-theme')) {
-        localStorage.setItem('theme', 'light');
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-      } else {
-        localStorage.setItem('theme', 'dark');
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-      }
-    }
-
-    // Initialize Theme on Page Load
-    document.addEventListener("DOMContentLoaded", function () {
-      const savedTheme = localStorage.getItem('theme');
-      const icon = document.getElementById('theme-icon');
-      
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-        if(icon) {
-            icon.classList.remove('fa-sun');
-            icon.classList.add('fa-moon');
-        }
-      }
-    });
-  </script>
 </body>
 
 </html>

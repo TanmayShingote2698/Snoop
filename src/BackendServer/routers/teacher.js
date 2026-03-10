@@ -515,6 +515,80 @@ router.post("/deleteTest", checkAuthenticated, (req, res) => {
     });
 });
 
+// Profile Routes
+router.get("/profile", checkAuthenticated, (req, res) => {
+    res.render("profile", {
+        user: req.session.user,
+        hideHome: true,
+        currentPage: 'profile'
+    });
+});
+
+router.post("/profile", checkAuthenticated, upload.single('photo'), (req, res) => {
+    let photoUrl = req.file ? req.file.path : req.session.user.photo_url;
+    let newName = req.body.name || req.session.user.name;
+
+    const options = {
+        url: 'http://127.0.0.1:300/updateProfile',
+        json: true,
+        body: {
+            email: req.session.user.email,
+            role: req.session.user.role,
+            name: newName,
+            photo_url: photoUrl
+        }
+    };
+
+    request.post(options, (err, resp, body) => {
+        if (!err && body && body.status) {
+            req.session.user.name = newName;
+            req.session.user.photo_url = photoUrl;
+            res.redirect("/teacher/profile?success=" + encodeURIComponent("Profile updated successfully."));
+        } else {
+            console.error("Profile update error:", err || body);
+            res.redirect("/teacher/profile?error=" + encodeURIComponent("Failed to update profile."));
+        }
+    });
+});
+
+// Security Routes
+router.get("/security", checkAuthenticated, (req, res) => {
+    res.render("security", {
+        user: req.session.user,
+        hideHome: true,
+        currentPage: 'security'
+    });
+});
+
+router.post("/security", checkAuthenticated, (req, res) => {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    
+    if (newPassword !== confirmPassword) {
+        return res.redirect("/teacher/security?error=" + encodeURIComponent("New passwords do not match."));
+    }
+
+    const options = {
+        url: 'http://127.0.0.1:300/changePassword',
+        json: true,
+        body: {
+            email: req.session.user.email,
+            role: req.session.user.role,
+            currentPassword: currentPassword,
+            newPassword: newPassword
+        }
+    };
+
+    request.post(options, (err, resp, body) => {
+        if (!err && body && body.status) {
+            res.redirect("/teacher/security?success=" + encodeURIComponent("Password changed successfully."));
+        } else {
+            console.error("Password change error:", err || body);
+            let errMsg = body && body.message ? body.message : "Failed to change password. Ensure current password is correct.";
+            res.redirect("/teacher/security?error=" + encodeURIComponent(errMsg));
+        }
+    });
+});
+
 // AI Test Generation Routes
 const AITestGenerator = require('../services/aiTestGenerator');
 const aiGenerator = new AITestGenerator();

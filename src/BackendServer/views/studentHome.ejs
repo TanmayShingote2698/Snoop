@@ -1,40 +1,218 @@
-<div class="text-center mb-5">
-  <h2 class="font-weight-bold">Student Dashboard</h2>
-  <p class="text-dim">Welcome, <%= email %>
-  </p>
-</div>
+<div class="container" style="margin-top: 5px;">
+  <!-- Top Section: Join & Results Cards -->
+  <div class="row mb-5">
+    <!-- Join Test Card -->
+    <div class="col-md-6 mb-3">
+      <div class="glass-card card-pink h-100 d-flex flex-column align-items-center justify-content-center text-center p-5 cursor-pointer" onclick="openJoinTestModal()">
+        <i class="fas fa-sign-in-alt fa-3x mb-3" style="color: var(--primary);"></i>
+        <h4 class="font-weight-bold mb-2">Join Test</h4>
+        <p class="text-dim mb-0">Click here to enter your Test ID and Access Code</p>
+      </div>
+    </div>
 
-<div class="row justify-content-center">
-  <div class="col-md-4 mb-4">
-    <div class="glass-card h-100 d-flex flex-column align-items-center text-center">
-      <i class="fas fa-search fa-3x mb-4" style="color: #f59e0b;"></i>
-      <h4>Join Test by ID</h4>
-      <p class="text-dim mb-4">Have a specific Test ID? Enter it below to start immediately.</p>
-      <form action="/student/takeTest" method="POST" class="mt-auto w-100">
-        <input type="hidden" name="email" value="<%= email %>">
-        <div class="form-group">
-            <input type="text" name="testID" class="form-control text-center" placeholder="Enter Test ID" required style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white;">
-        </div>
-        <div class="form-group">
-            <input type="password" name="accessCode" class="form-control text-center" placeholder="Access Code" required style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white;">
-        </div>
-        <button type="submit" class="btn-snoop w-100 justify-content-center">
-          Start Test <i class="fas fa-arrow-right ml-2"></i>
-        </button>
-      </form>
+    <!-- Quick Results Card -->
+    <div class="col-md-6 mb-3">
+      <div class="glass-card card-blue h-100 d-flex flex-column align-items-center justify-content-center text-center p-5 cursor-pointer" onclick="window.location.href='/student/GetResultByEmail'">
+        <i class="fas fa-poll fa-3x mb-3" style="color: #3b82f6;"></i>
+        <h4 class="font-weight-bold mb-2">My Results</h4>
+        <p class="text-dim mb-0">View your overall performance across all tests.</p>
+      </div>
     </div>
   </div>
 
-  <div class="col-md-4 mb-4">
-    <div class="glass-card h-100 d-flex flex-column align-items-center text-center">
-      <i class="fas fa-poll fa-3x mb-4" style="color: #3b82f6;"></i>
-      <h4>Quick Results</h4>
-      <p class="text-dim mb-4">Instantly view your performance and feedback from previous tests.</p>
-      <a href="/student/GetResultByEmail" class="btn-snoop w-100 justify-content-center mt-auto">
-        Check Results <i class="fas fa-chart-line"></i>
-      </a>
+  <!-- Bottom Section: History List -->
+  <div class="row">
+    <div class="col-12">
+      <h5 class="font-weight-bold mb-3 pl-2" style="color: var(--text-main);">History <i class="fas fa-history ml-2"></i></h5>
+      
+      <% if (locals.results && locals.results.length > 0) { %>
+        <!-- Sort results by created_at or test_id as fallback (newest first) -->
+        <% 
+           let sortedResults = [...locals.results].sort((a,b) => {
+               if(a.created_at && b.created_at) return new Date(b.created_at) - new Date(a.created_at);
+               return b.test_id - a.test_id;
+           });
+        %>
+        <!-- Header Row -->
+        <div class="row align-items-center mb-2 px-4 py-2 mx-0 d-none d-md-flex" style="border-radius: 10px; background: transparent;">
+            <div class="col-md-3">
+                <div class="font-weight-bold ml-1 text-uppercase" style="color: var(--primary); font-size: 0.85rem; letter-spacing: 0.5px;">
+                    Test ID
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="font-weight-bold text-uppercase" style="color: var(--primary); font-size: 0.85rem; letter-spacing: 0.5px;">
+                    Scheduled Window
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="font-weight-bold text-uppercase" style="color: var(--primary); font-size: 0.85rem; letter-spacing: 0.5px;">
+                    Submitted At
+                </div>
+            </div>
+            <div class="col-md-2 text-center">
+                <div class="font-weight-bold text-uppercase" style="color: var(--primary); font-size: 0.85rem; letter-spacing: 0.5px;">
+                    Result
+                </div>
+            </div>
+        </div>
+        
+        <% sortedResults.forEach(function(result, index) { %>
+          <div class="row align-items-center mb-3 px-4 py-3 cursor-pointer mx-0 snoop-row-card">
+            <div class="col-md-3">
+                <div class="font-weight-bold" style="color: var(--text-main); font-size: 1.1rem;">
+                    <%= result.test_id %>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <span class="badge badge-pill py-1 px-3" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid #3b82f6; font-size: 0.75rem;">
+                    <i class="far fa-calendar-alt mr-1"></i> <%= result.start_date || 'N/A' %> to <%= result.end_date || 'N/A' %>
+                </span>
+            </div>
+
+            <div class="col-md-3">
+                <span class="badge badge-pill py-1 px-3" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid #22c55e; font-size: 0.75rem;">
+                    <i class="fas fa-check-circle mr-1"></i> <%= result.created_at ? new Date(result.created_at).toLocaleString() : 'N/A' %>
+                </span>
+            </div>
+            
+            <div class="col-md-2 text-right px-0">
+                <button class="btn btn-sm font-weight-bold w-100 py-2" style="border: none; border-radius: 10px; color: white; background: linear-gradient(135deg, var(--primary), var(--secondary)); transition: all 0.3s; box-shadow: 0 4px 10px rgba(212,16,170,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 15px rgba(212,16,170,0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(212,16,170,0.3)'" onclick="openDetailedResultModal(JSON.parse(decodeURIComponent('<%= encodeURIComponent(JSON.stringify(result)) %>')))">
+                    <i class="fas fa-chart-pie mr-2"></i> View Result
+                </button>
+            </div>
+          </div>
+        <% }); %>
+      <% } else { %>
+          <div class="d-flex align-items-center justify-content-center mb-3 px-4 py-5" style="border: 2px dashed var(--text-dim); border-radius: 10px; background: transparent;">
+            <i class="fas fa-folder-open text-dim mr-3 fa-2x"></i>
+            <span class="text-dim" style="font-size: 1.1rem;">No test history available. Takes a test to see results here!</span>
+          </div>
+      <% } %>
+
     </div>
   </div>
-
-
 </div>
+
+<!-- Hidden Form for submission from Modal -->
+<form id="hiddenJoinForm" action="/student/takeTest" method="POST" style="display: none;">
+    <input type="hidden" name="email" value="<%= email %>">
+    <input type="hidden" name="testID" id="hiddenTestID">
+    <input type="hidden" name="accessCode" id="hiddenAccessCode">
+</form>
+
+<script>
+function openJoinTestModal() {
+    Swal.fire({
+        title: 'Join a Test',
+        html: `
+            <div style="text-align: left; margin-bottom: 1rem;">
+                <label style="color: var(--text-dim); font-size: 0.9em; font-weight: 600;">Test ID</label>
+                <input id="swal-test-id" class="swal2-input" placeholder="Enter Test ID" style="width: 80%; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--bg-input); color: var(--text-main); margin: 0 auto 10px; display: block;">
+            </div>
+            <div style="text-align: left;">
+                <label style="color: var(--text-dim); font-size: 0.9em; font-weight: 600;">Access Code</label>
+                <input id="swal-access-code" type="password" class="swal2-input" placeholder="Access Code" style="width: 80%; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--bg-input); color: var(--text-main); margin: 0 auto; display: block;">
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-play mr-2"></i> Start Test',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: 'var(--primary)',
+        cancelButtonColor: '#d33',
+        background: 'linear-gradient(135deg, #fdf4f9 0%, #f4f8fd 100%)',
+        customClass: {
+            title: 'text-main',
+            popup: 'rounded-lg border border-primary border-opacity-25 shadow-lg'
+        },
+        preConfirm: () => {
+            const testId = document.getElementById('swal-test-id').value;
+            const accessCode = document.getElementById('swal-access-code').value;
+            if (!testId || !accessCode) {
+                Swal.showValidationMessage('Both Test ID and Access Code are required!');
+            }
+            return { testId: testId, accessCode: accessCode }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('hiddenTestID').value = result.value.testId;
+            document.getElementById('hiddenAccessCode').value = result.value.accessCode;
+            document.getElementById('hiddenJoinForm').submit();
+        }
+    });
+}
+
+function openDetailedResultModal(resultObj) {
+    let qnaHtml = '';
+    // Build Question breakdown HTML
+    if(resultObj.answers && resultObj.answers.length > 0) {
+        // Unfortunately the Result API only returns arrays of strings for answers. 
+        // We will mock display it or loop through if available in structured format later.
+        // For now, list the responses.
+        resultObj.answers.forEach((ans, idx) => {
+            qnaHtml += `
+            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: left; border-left: 3px solid var(--primary);">
+                <div style="font-weight: bold; color: var(--text-main);">Q${idx+1}: Your Response</div>
+                <div style="color: var(--text-dim); margin-top: 5px;">${ans}</div>
+            </div>`;
+        });
+    } else {
+        qnaHtml = `<p class="text-dim">No answer data available for this test.</p>`;
+    }
+
+    // Build Flag HTML
+    let flagsHtml = '';
+    if(resultObj.tab_switch_data && resultObj.tab_switch_data.length > 0) {
+        flagsHtml += `<div style="text-align: left; margin-bottom: 10px;"><strong>Warning Flags Encountered:</strong></div>`;
+        resultObj.tab_switch_data.forEach(flag => {
+            flagsHtml += `
+            <div style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 5px 10px; border-radius: 5px; margin-bottom: 5px; text-align: left; font-size: 0.9em;">
+                <i class="fas fa-exclamation-triangle mr-2"></i> ${flag}
+            </div>`;
+        });
+    } else {
+        flagsHtml += `
+        <div style="background: rgba(34, 197, 94, 0.1); color: #22c55e; padding: 10px; border-radius: 5px; text-align: center; margin-bottom: 10px;">
+            <i class="fas fa-shield-check mr-2"></i> No violations recorded. Perfect Integrity!
+        </div>`;
+    }
+
+    Swal.fire({
+        title: `Results - Test ID ${resultObj.test_id}`,
+        width: '600px',
+        html: `
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+                <div style="flex: 1; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                    <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Overall Score</div>
+                    <div style="color: var(--secondary); font-size: 2em; font-weight: bold;">${resultObj.final_score}</div>
+                </div>
+                <div style="flex: 1; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                    <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Integrity Score</div>
+                    <div style="color: ${resultObj.integrity < 75 ? '#ef4444' : '#22c55e'}; font-size: 2em; font-weight: bold;">${resultObj.integrity}%</div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+                ${flagsHtml}
+            </div>
+
+            <div style="border-top: 1px solid var(--glass-border); padding-top: 20px;">
+                <div style="font-weight: bold; color: var(--text-main); text-align: left; margin-bottom: 15px;">
+                    <i class="fas fa-list-ol mr-2"></i> Question Breakdown
+                </div>
+                <div style="max-height: 200px; overflow-y: auto; padding-right: 5px;">
+                    ${qnaHtml}
+                </div>
+            </div>
+        `,
+        confirmButtonText: 'Close',
+        confirmButtonColor: 'var(--primary)',
+        background: 'linear-gradient(135deg, #fdf4f9 0%, #f4f8fd 100%)',
+        customClass: {
+            title: 'text-main font-weight-bold',
+            popup: 'rounded-lg border border-primary border-opacity-25 shadow-lg'
+        }
+    });
+}
+</script>
