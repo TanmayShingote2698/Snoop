@@ -3,7 +3,7 @@ import bcrypt
 import os
 from dotenv import load_dotenv
 
-load_dotenv('../../.env')
+load_dotenv()
 
 class authFunctions:
 
@@ -27,14 +27,13 @@ class authFunctions:
         except Exception:
             return False
 
-    def addStudent(self,id,name,email,student_id,photoURL,password):
+    def addStudent(self,id,name,email,photoURL,password):
         email = email.lower()
         # SECURITY FIX: Hash password with bcrypt before storing
         hashed_password = self.hash_password(password)
         jsonData = {
                     'name':name,
                     'email':email,
-                    'student_id': student_id,
                     'photo_url':photoURL,
                     'password':hashed_password,
                     'tests_given':{'TestAmt':0}}

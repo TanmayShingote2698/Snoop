@@ -225,203 +225,138 @@
 
     // Helper to log events
     function logEvent(type, startTime, endTime) {
-      let duration = (endTime - startTime) / 1000;
-      proctoringLogs.push({
-        type: type, // 'TAB_SWITCH' or 'FULLSCREEN_EXIT'
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        durationSeconds: duration
-      });
-      updateHiddenInput();
+        let duration = (endTime - startTime) / 1000;
+        proctoringLogs.push({
+            type: type, // 'TAB_SWITCH' or 'FULLSCREEN_EXIT'
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            durationSeconds: duration
+        });
+        updateHiddenInput();
     }
 
     function updateHiddenInput() {
-      let logInput = document.getElementById('tabSwitchData');
-      if (logInput) {
-        logInput.value = JSON.stringify(proctoringLogs);
-      }
+        let logInput = document.getElementById('tabSwitchData');
+        if(logInput) {
+            logInput.value = JSON.stringify(proctoringLogs);
+        }
     }
 
-    // Overlay for Fullscreen Enforcement and Permissions
+    // Overlay for Fullscreen Enforcement
     const fullscreenOverlay = document.createElement('div');
     fullscreenOverlay.id = 'fullscreenOverlay';
-    fullscreenOverlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #050505; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 2rem;';
+    fullscreenOverlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;';
     fullscreenOverlay.innerHTML = `
-        <div class="glass-card p-5 d-flex flex-column align-items-center" style="max-width: 500px; border: 1px solid var(--primary);">
-            <i class="fas fa-shield-alt fa-4x mb-4 text-primary"></i>
-            <h2 class="mb-3">Security Protocol Required</h2>
-            <p class="text-dim mb-4">To ensure examination integrity, you must:</p>
-            <ul class="text-left text-dim mb-4" style="list-style: none; padding: 0;">
-                <li class="mb-2"><i class="fas fa-check-circle text-primary mr-2"></i> Enable Fullscreen Mode</li>
-                <li class="mb-2"><i class="fas fa-check-circle text-primary mr-2"></i> Grant Microphone Permissions</li>
-                <li class="mb-2"><i class="fas fa-check-circle text-primary mr-2"></i> Keep Microphone Unmuted</li>
-            </ul>
-            <button class="btn-snoop btn-lg px-5" onclick="initializeProctoring()">Initialize & Start Exam</button>
-        </div>
+        <i class="fas fa-expand fa-4x mb-4 text-primary"></i>
+        <h2>Fullscreen Mode Required</h2>
+        <p class="text-dim mb-4">You must be in fullscreen mode to take this exam.</p>
+        <button class="btn-snoop px-5" onclick="enterFullscreen()">Enter Fullscreen & Start</button>
     `;
     document.body.appendChild(fullscreenOverlay);
 
-    let audioStream = null;
-    let audioContext = null;
-    let audioAnalyzer = null;
-
-    async function initializeProctoring() {
-      try {
-        // 1. Request Microphone
-        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log("Microphone access granted.");
-
-        // Setup audio monitoring
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(audioStream);
-        audioAnalyzer = audioContext.createAnalyser();
-        source.connect(audioAnalyzer);
-
-        // Periodically check if audio is still coming through
-        setInterval(checkAudioLevels, 5000);
-
-        // Detect if stream stops (e.g. system level mute or cable pull)
-        audioStream.getAudioTracks()[0].onended = () => {
-          logEvent('MICROPHONE_DISCONNECTED', new Date(), new Date());
-          Swal.fire({
-            icon: 'error',
-            title: 'Microphone Lost!',
-            text: 'Your microphone connection was lost. Please reconnect it immediately.',
-            confirmButtonColor: '#ef4444'
-          });
-        };
-
-        // 2. Request Fullscreen
+    function enterFullscreen() {
         const elem = document.documentElement;
         if (elem.requestFullscreen) {
-          await elem.requestFullscreen();
+            elem.requestFullscreen().then(() => {
+                document.getElementById('fullscreenOverlay').style.display = 'none';
+            }).catch(err => {
+                // Swal.fire("Error enabling fullscreen: " + err.message);
+            });
         }
-
-        // 3. Lock Keyboard (Escape key) - Chrome/Edge specific but very effective for Proctored Exams
-        if (navigator.keyboard && navigator.keyboard.lock) {
-          await navigator.keyboard.lock(['Escape']).catch(e => console.warn("Keyboard lock failed:", e));
-          console.log("Keyboard lock engaged for 'Escape'.");
-        }
-
-        document.getElementById('fullscreenOverlay').style.display = 'none';
-      } catch (err) {
-        console.error("Initialization failed:", err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Permission Denied',
-          text: 'Microphone access is mandatory for this exam. Please enable it in your browser settings and refresh.',
-          confirmButtonColor: '#ef4444'
-        });
-      }
     }
 
-    function checkAudioLevels() {
-      if (!audioAnalyzer) return;
-      const dataArray = new Uint8Array(audioAnalyzer.frequencyBinCount);
-      audioAnalyzer.getByteFrequencyData(dataArray);
-
-      let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        sum += dataArray[i];
-      }
-      const average = sum / dataArray.length;
-
-      if (average === 0) {
-        console.warn("No audio detected - potential mute.");
-        logEvent('MICROPHONE_SILENCED', new Date(), new Date());
-      }
-    }
-
-    // Check Permissions on Load
+    // Check Fullscreen on Load
     if (!document.fullscreenElement) {
-      document.getElementById('fullscreenOverlay').style.display = 'flex';
+        document.getElementById('fullscreenOverlay').style.display = 'flex';
+    } else {
+        document.getElementById('fullscreenOverlay').style.display = 'none';
     }
 
     // Monitor Fullscreen Changes
     document.addEventListener('fullscreenchange', () => {
-      if (!document.fullscreenElement && !isSubmitting) {
-        // EXITED Fullscreen
-        fullscreenExitStartTime = new Date();
-
-        document.getElementById('fullscreenOverlay').style.display = 'flex';
-        Swal.fire({
-          icon: 'warning',
-          title: 'Fullscreen Exited!',
-          text: 'You have left the examination environment. What would you like to do?',
-          showDenyButton: true,
-          confirmButtonText: 'Return to Test',
-          denyButtonText: 'Submit & Finish',
-          confirmButtonColor: 'var(--primary)',
-          denyButtonColor: '#ef4444',
-          allowOutsideClick: false,
-          allowEscapeKey: false
-        }).then((result) => {
-          let fullscreenExitEndTime = new Date();
-
-          if (result.isConfirmed) {
-            // Log the exit event before re-entering
-            logEvent('FULLSCREEN_EXIT', fullscreenExitStartTime, fullscreenExitEndTime);
-            initializeProctoring(); // This will re-trigger fullscreen
-          } else if (result.isDenied) {
-            // Log the exit event even if submitting
-            logEvent('FULLSCREEN_EXIT', fullscreenExitStartTime, fullscreenExitEndTime);
-            isSubmitting = true;
-            document.getElementById('testFormID').submit();
-          }
-        });
-      } else {
-        // ENTERED Fullscreen
-        document.getElementById('fullscreenOverlay').style.display = 'none';
-      }
+        if (!document.fullscreenElement && !isSubmitting) {
+            // EXITED Fullscreen
+            fullscreenExitStartTime = new Date();
+            
+            document.getElementById('fullscreenOverlay').style.display = 'flex';
+            Swal.fire({
+                icon: 'warning',
+                title: 'Fullscreen Exited!',
+                text: 'You have left the examination environment. What would you like to do?',
+                showDenyButton: true,
+                confirmButtonText: 'Return to Test',
+                denyButtonText: 'Submit & Finish',
+                confirmButtonColor: 'var(--primary)',
+                denyButtonColor: '#ef4444',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then((result) => {
+                let fullscreenExitEndTime = new Date();
+                
+                if (result.isConfirmed) {
+                    // Log the exit event before re-entering
+                    logEvent('FULLSCREEN_EXIT', fullscreenExitStartTime, fullscreenExitEndTime);
+                    enterFullscreen();
+                } else if (result.isDenied) {
+                    // Log the exit event even if submitting
+                    logEvent('FULLSCREEN_EXIT', fullscreenExitStartTime, fullscreenExitEndTime);
+                    isSubmitting = true;
+                    document.getElementById('testFormID').submit();
+                }
+            });
+        } else {
+            // ENTERED Fullscreen
+            document.getElementById('fullscreenOverlay').style.display = 'none';
+        }
     });
 
     // 1. Disable Right Click
     document.addEventListener('contextmenu', event => event.preventDefault());
 
     // 2. Disable Copy/Cut/Paste
-    document.oncut = document.oncopy = document.onpaste = function (event) {
-      event.preventDefault();
-      return false;
+    document.oncut = document.oncopy = document.onpaste = function(event) {
+        event.preventDefault();
+        return false;
     };
 
     // 3. Detect Tab Switching (with Type & Duration Tracking)
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden && !isSubmitting) {
-        // User left the tab
-        awayStartTime = new Date();
-
-        Swal.fire({
-          icon: 'warning',
-          title: 'Tab Switching Detected!',
-          text: 'Moving away from the test window is prohibited. This incident has been recorded.',
-          confirmButtonColor: '#ef4444',
-          confirmButtonText: 'I Understand',
-          allowOutsideClick: false,
-          allowEscapeKey: false
-        });
-      } else if (!document.hidden && awayStartTime) {
-        // User returned
-        let awayEndTime = new Date();
-        logEvent('TAB_SWITCH', awayStartTime, awayEndTime);
-        awayStartTime = null; // Reset
-      }
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden && !isSubmitting) {
+            // User left the tab
+            awayStartTime = new Date();
+            
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tab Switching Detected!',
+                text: 'Moving away from the test window is prohibited. This incident has been recorded.',
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'I Understand',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+        } else if (!document.hidden && awayStartTime) {
+            // User returned
+            let awayEndTime = new Date();
+            logEvent('TAB_SWITCH', awayStartTime, awayEndTime);
+            awayStartTime = null; // Reset
+        }
     });
 
     // Handle Submit Button Click (Ensures warnings are suppressed)
-    document.getElementById('endTestId').onclick = function () {
-      isSubmitting = true;
+    document.getElementById('endTestId').onclick = function() {
+        isSubmitting = true;
     };
 
     // Ensure form submit also sets flag (covers creating programmatic submits)
     const originalSubmit = document.getElementById('testFormID').submit;
-    document.getElementById('testFormID').submit = function () {
-      isSubmitting = true;
-      originalSubmit.apply(this);
+    document.getElementById('testFormID').submit = function() {
+        isSubmitting = true;
+        originalSubmit.apply(this);
     };
-
+    
     // Also listen to the actual submit event
-    document.getElementById('testFormID').addEventListener('submit', function () {
-      isSubmitting = true;
+    document.getElementById('testFormID').addEventListener('submit', function() {
+        isSubmitting = true;
     });
 
     // Navigation Lockdown (Back Button Intercept)
@@ -430,46 +365,46 @@
       history.pushState(null, null, location.href);
       window.onpopstate = function () {
         Swal.fire({
-          title: 'Leave Exam?',
-          text: "Do you want to submit your test and leave?",
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Yes, Submit & Leave',
-          cancelButtonText: 'No, Stay',
-          confirmButtonColor: '#ef4444', // Red for dangerous action
-          cancelButtonColor: 'var(--primary)',
-          reverseButtons: true
+            title: 'Leave Exam?',
+            text: "Do you want to submit your test and leave?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Submit & Leave',
+            cancelButtonText: 'No, Stay',
+            confirmButtonColor: '#ef4444', // Red for dangerous action
+            cancelButtonColor: 'var(--primary)',
+            reverseButtons: true
         }).then((result) => {
-          if (result.isConfirmed) {
-            isSubmitting = true;
-            document.getElementById('testFormID').submit();
-          } else {
-            history.pushState(null, null, location.href); // Re-trap
-          }
+            if (result.isConfirmed) {
+                isSubmitting = true;
+                document.getElementById('testFormID').submit();
+            } else {
+                history.pushState(null, null, location.href); // Re-trap
+            }
         });
       };
-
+      
       // 2. Auto-Submit on Reload/Close
       window.onbeforeunload = function () {
         if (!isSubmitting) {
-          // User is trying to reload or close
-          isSubmitting = true; // Prevent loop
+            // User is trying to reload or close
+            isSubmitting = true; // Prevent loop
+            
+            // Collect Form Data
+            const form = document.getElementById('testFormID');
+            const formData = new FormData(form);
+            const searchParams = new URLSearchParams(formData);
 
-          // Collect Form Data
-          const form = document.getElementById('testFormID');
-          const formData = new FormData(form);
-          const searchParams = new URLSearchParams(formData);
-
-          // Use fetch with keepalive to ensure request completes even after unload
-          fetch('/student/submitTest', {
-            method: 'POST',
-            body: searchParams,
-            keepalive: true
-          }).catch(err => console.error("Auto-submit failed:", err));
-
-          // Allow the reload/close to happen (which will hit GET /startExam -> redirect to Home)
-          // Returning null suppresses the confirmation dialog
-          return null;
+            // Use fetch with keepalive to ensure request completes even after unload
+            fetch('/student/submitTest', {
+                method: 'POST',
+                body: searchParams,
+                keepalive: true
+            }).catch(err => console.error("Auto-submit failed:", err));
+            
+            // Allow the reload/close to happen (which will hit GET /startExam -> redirect to Home)
+            // Returning null suppresses the confirmation dialog
+            return null; 
         }
       };
     };
@@ -477,43 +412,20 @@
     // Handle Timer Auto-Submit
     // (Note: The timer logic uses click() on endTestId, so it is covered)
 
-    // 5. Disable Keyboard Shortcuts rigorously (Capturing Phase)
-    window.addEventListener('keydown', function (e) {
-      // Blocks: Esc, Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+U (View Source), Ctrl+S (Save), Ctrl+P (Print), F12 (DevTools)
-      const forbiddenKeys = [67, 86, 88, 85, 83, 80];
-      const isEsc = e.keyCode === 27;
-      const isForbiddenCtrl = e.ctrlKey && forbiddenKeys.includes(e.keyCode);
-      const isF12 = e.keyCode === 123;
-      const isForbiddenMeta = e.metaKey && forbiddenKeys.includes(e.keyCode); // For Mac users
-
-      if (isEsc || isForbiddenCtrl || isF12 || isForbiddenMeta) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // If Esc is pressed, we alert but the Keyboard Lock should have prevented the exit.
-        // If the browser doesn't support lock, this alert still provides feedback.
-        Swal.fire({
-          icon: 'error',
-          title: 'Action Blocked!',
-          text: isEsc ? 'Exiting fullscreen using Escape is strictly prohibited. Please use the "Submit" button if you want to finish.' : 'This shortcut is strictly prohibited during the examination.',
-          confirmButtonColor: '#ef4444',
-          timer: 3000,
-          timerProgressBar: true,
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false,
-          allowEscapeKey: false
-        });
-        return false;
-      }
-    }, true); // TRUE = Capturing phase (interception before bubbles)
-
-    // 6. Final cleanup on unload
-    window.addEventListener('unload', () => {
-      if (audioStream) {
-        audioStream.getTracks().forEach(track => track.stop());
-      }
-    });
+    // 5. Disable Keyboard Shortcuts (Ctrl+C, Ctrl+V, Alt+Tab prevention attempt)
+    document.onkeydown = function(e) {
+        if (e.ctrlKey && (e.keyCode === 67 || e.keyCode === 86 || e.keyCode === 85)) { // Ctrl+C, V, U
+            Swal.fire({
+                icon: 'error',
+                title: 'Action Blocked!',
+                text: 'Copy/Paste shortcuts are strictly prohibited.',
+                confirmButtonColor: '#ef4444',
+                timer: 2000,
+                timerProgressBar: true
+            });
+            return false;
+        }
+    };
   </script>
 </body>
 

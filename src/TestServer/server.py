@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from test_functions import testFunction
 
-# Load environment variables from project root
-load_dotenv('../../.env')
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 api= Api(app)

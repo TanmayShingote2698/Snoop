@@ -6,15 +6,14 @@ from supabase import create_client, Client
 import os
 from dotenv import load_dotenv
 
-load_dotenv('../../.env')
+load_dotenv()
 
 class dbManager:
     """Database manager for Supabase"""
 
     def __init__(self):
         self.url = os.getenv('SUPABASE_URL', '')
-        # PRIORITIZE Service Role Key to bypass RLS for backend operations
-        self.key = os.getenv('SUPABASE_SERVICE_ROLE_KEY') or os.getenv('SUPABASE_KEY', '')
+        self.key = os.getenv('SUPABASE_KEY', '')
         self.client: Client = None
 
     def connect(self):
