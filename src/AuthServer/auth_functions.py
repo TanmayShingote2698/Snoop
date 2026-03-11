@@ -30,6 +30,14 @@ class authFunctions:
 
     def addStudent(self,id,name,email,photoURL,password):
         email = email.lower()
+        
+        # Check if student already exists
+        query = f"select email from student where email='{email}'"
+        existing = self.db.runQuery(query)
+        if len(existing) > 0:
+            print(f"[AUTH] Signup Failed: Student email {email} already exists")
+            return None
+
         # SECURITY FIX: Hash password with bcrypt before storing
         hashed_password = self.hash_password(password)
         jsonData = {
@@ -43,6 +51,14 @@ class authFunctions:
 
     def addAdmin(self,id,name,email,password):
         email = email.lower()
+
+        # Check if admin already exists
+        query = f"select email from admin where email='{email}'"
+        existing = self.db.runQuery(query)
+        if len(existing) > 0:
+            print(f"[AUTH] Signup Failed: Admin email {email} already exists")
+            return None
+
         # SECURITY FIX: Hash password with bcrypt before storing
         hashed_password = self.hash_password(password)
         jsonData = {

@@ -9,16 +9,16 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --primary: #00ff41;
-      --secondary: #003b00;
-      --bg-dark: #050505;
-      --bg-start: #050505;
-      --bg-end: #0a0a0a;
-      --bg-card: rgba(20, 20, 20, 0.9);
-      --text-main: #e5e5e5;
-      --text-dim: #a3a3a3;
-      --text-grad-start: #fff;       /* New: White for Dark Mode */
-      --text-grad-end: #cbd5e1;      /* New: Light Gray for Dark Mode */
+      --primary: #D410AA;
+      --secondary: #b0078a;
+      --bg-dark: #F5F5F5;
+      --bg-start: #F5F5F5;
+      --bg-end: #E5E5E5;
+      --bg-card: rgba(255, 255, 255, 0.9);
+      --text-main: #1A1A1A;
+      --text-dim: #242424;
+      --text-grad-start: #1A1A1A;
+      --text-grad-end: #D410AA;
     }
 
     /* ... code omitted ... */
@@ -36,19 +36,6 @@
 
     /* ... code omitted ... */
 
-    /* Light Theme Variables */
-    body.light-theme {
-      --bg-dark: #f8fafc;
-      --bg-start: #f8fafc;
-      --bg-end: #e2e8f0;
-      --bg-card: rgba(255, 255, 255, 0.7);
-      --primary: #16a34a;
-      --secondary: #14532d;
-      --text-main: #1e293b;
-      --text-dim: #64748b;
-      --text-grad-start: #1e293b; /* New: Dark Slate for Light Mode */
-      --text-grad-end: #16a34a;   /* New: Green for Light Mode */
-    }
 
     * {
       box-sizing: border-box;
@@ -137,12 +124,12 @@
       justify-content: space-between;
       align-items: center;
       padding: 0.5rem 1.5rem;
-      background: rgba(5, 5, 5, 0.02);
+      background: rgba(255, 255, 255, 0.7);
       backdrop-filter: blur(5px);
       position: sticky;
       top: 0;
       z-index: 1000;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
 
     .logo {
@@ -280,69 +267,16 @@
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    /* Light Theme Variables */
-    body.light-theme {
-      --bg-dark: #f8fafc;
-      --bg-start: #f8fafc; /* White Start */
-      --bg-end: #e2e8f0;   /* Light Gray End */
-      --bg-card: rgba(255, 255, 255, 0.7);
-      --primary: #16a34a;
-      --secondary: #14532d;
-      --text-main: #1e293b;
-      --text-dim: #64748b;
-      --text-grad-start: #1e293b; /* Dark Slate */
-      --text-grad-end: #16a34a;   /* Primary Green */
-    }
-    
-    body.light-theme header {
-      background: rgba(242, 246, 249, 0.02);
-      backdrop-filter: blur(5px);
-      border-bottom: 1px solid rgba(0,0,0,0.05);
-    }
-
-    body.light-theme .floating-icon {
-      color: #0f172a; /* Dark icons for light bg */
-      opacity: 0.08;
-    }
-
-    /* Theme Toggle Button */
-    .theme-toggle {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #fff;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-right: 1rem;
-    }
-    
-    .theme-toggle:hover {
-      background: var(--primary);
-      color: white;
-      transform: rotate(15deg);
-    }
-    
-    body.light-theme .theme-toggle {
-      background: rgba(0, 0, 0, 0.05);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      color: var(--text-main);
-    }
 
     /* Footer Styles */
     .snoop-footer {
       text-align: center;
-      padding: 0.8rem;
+      padding: 1.5rem;
       margin-top: auto; /* Push to bottom using Flexbox */
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      background: rgba(5, 5, 5, 0.8);
-      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(0, 0, 0, 0.05); /* very light border */
       color: var(--text-dim);
-      font-size: 0.8rem;
+      font-size: 0.9rem;
+      background: transparent;
       position: relative;
       z-index: 10;
     }
@@ -398,10 +332,7 @@
         <div class="logo">SNOOP</div>
     </div>
     <div style="display: flex; align-items: center;">
-         <!-- Theme Switcher -->
-         <button class="theme-toggle" onclick="toggleTheme()" title="Switch Theme">
-            <i class="fas fa-sun" id="theme-icon"></i>
-         </button>
+         <!-- Access Portal Button -->
         <a href="/AccessPortal" class="access-btn">Access Portal <i class="fas fa-arrow-right ml-2"></i></a>
     </div>
   </header>
@@ -454,38 +385,5 @@
     &copy; 2026 Snoop. All Rights Reserved under <strong>TOMS</strong>.
   </footer>
 
-  <script>
-    // Theme Switcher Logic (Replicated)
-    function toggleTheme() {
-      const body = document.body;
-      const icon = document.getElementById('theme-icon');
-      
-      body.classList.toggle('light-theme');
-      
-      if (body.classList.contains('light-theme')) {
-        localStorage.setItem('theme', 'light');
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-      } else {
-        localStorage.setItem('theme', 'dark');
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-      }
-    }
-
-    // Initialize Theme
-    document.addEventListener("DOMContentLoaded", function () {
-      const savedTheme = localStorage.getItem('theme');
-      const icon = document.getElementById('theme-icon');
-      
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-        if(icon) {
-            icon.classList.remove('fa-sun');
-            icon.classList.add('fa-moon');
-        }
-      }
-    });
-  </script>
 </body>
 </html>

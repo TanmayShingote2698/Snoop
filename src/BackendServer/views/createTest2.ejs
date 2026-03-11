@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Document</title>
-</head>
-
-<body>
   <div class="text-center mb-5">
     <h2 class="font-weight-bold">Test ID: <span style="color: var(--primary);">
         <%= testIDfromNode %>
@@ -311,6 +301,10 @@
           btn.disabled = true;
           btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating...';
 
+          // Disable Finalize button during generation
+          const finalizeBtn = document.querySelector('button[style*="#10b981"]');
+          if (finalizeBtn) finalizeBtn.disabled = true;
+
           try {
             const response = await fetch('/teacher/generateQuestionsAI', {
               method: 'POST',
@@ -369,21 +363,21 @@
               }, displayDelay + 100);
               
               // Show success message
-              alert(`✅ Successfully generated ${result.questions.length} questions!\n\nReview them below and click Finalize to save.`);
+              alert(`✅ Successfully generated ${result.questions.length} questions!\n\nReview them below. Saving to database...`);
               
               // Reset form and hide after success
               document.getElementById('aiform').reset();
               document.getElementById('aiform').style.display = 'none';
               
-              // Auto-save all generated questions to database
-              setTimeout(() => {
-                saveAllQuestionsToDatabase(result.questions);
-              }, finalDelay + 1000);
+              // Auto-save all generated questions to database via batch
+              await saveAllQuestionsToDatabase(result.questions);
             } else {
               alert('Error: ' + (result.error || 'Failed to generate questions'));
+              if (finalizeBtn) finalizeBtn.disabled = false;
             }
           } catch (error) {
             alert('Error: ' + error.message);
+            if (finalizeBtn) finalizeBtn.disabled = false;
           } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-magic mr-2"></i> Generate Questions';
@@ -532,75 +526,63 @@
           }
         }
         
-        // Save all questions to database
-        function saveAllQuestionsToDatabase(questionsToSave) {
+        // Save all questions to database in one batch request
+        async function saveAllQuestionsToDatabase(questionsToSave) {
+          if (!questionsToSave || questionsToSave.length === 0) return;
+          
           const testID = '<%= testIDfromNode %>';
-          let savedCount = 0;
-          let failedCount = 0;
-          let savePromises = [];
+          const finalizeBtn = document.querySelector('button[style*="#10b981"]');
+          const originalBtnContent = finalizeBtn ? finalizeBtn.innerHTML : '';
           
-          console.log(`💾 DATABASE SAVE IN PROGRESS - TestID: ${testID} | Total: ${questionsToSave.length}`);
+          console.log(`💾 BATCH DATABASE SAVE START - TestID: ${testID} | Total: ${questionsToSave.length}`);
           
-          // Submit each question one by one with a delay using AJAX (NO page reload!)
-          questionsToSave.forEach((q, index) => {
-            const savePromise = new Promise((resolve) => {
-              setTimeout(() => {
-                // Prepare JSON data (NOT FormData - backend has express.json() middleware)
-                const questionData = {
-                  testID: testID,
-                  question: q.question
-                };
-                
-                if (q.type.toLowerCase() === 'mcq') {
-                  questionData.op1 = q.op1;
-                  questionData.op2 = q.op2;
-                  questionData.op3 = q.op3;
-                  questionData.op4 = q.op4;
-                  questionData.answer = q.answer;
-                } else {
-                  questionData.answer = q.answer || '';
-                }
-                
-                console.log(`📤 Sending Q${index + 1} to server (TestID: ${testID})`);
-                
-                // Use fetch API with JSON instead of form.submit() to prevent page reload
-                fetch('/teacher/submitQues', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'  // Mark as AJAX request
-                  },
-                  body: JSON.stringify(questionData)
-                })
-                  .then(response => {
-                    if (response.ok) {
-                      return response.json().then(data => {
-                        savedCount++;
-                        const progressPercent = Math.round((savedCount / questionsToSave.length) * 100);
-                        console.log(`✅ Q${savedCount} saved | Progress: ${savedCount}/${questionsToSave.length}`);
-                        resolve({ success: true });
-                      });
-                    } else {
-                      failedCount++;
-                      console.error(`❌ Q${index + 1} failed - Status: ${response.status}`);
-                      resolve({ success: false });
-                    }
-                  })
-                  .catch(error => {
-                    failedCount++;
-                    console.error(`❌ Error saving Q${index + 1}: ${error.message}`);
-                    resolve({ success: false });
-                  });
-              }, index * 800); // 800ms delay between each submission
+          // Show saving state on finalize button
+          if (finalizeBtn) {
+            finalizeBtn.disabled = true;
+            finalizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving Questions...';
+          }
+
+          try {
+            const response = await fetch('/teacher/submitQuestionsBatch', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: JSON.stringify({
+                testID: testID,
+                questions: questionsToSave
+              })
             });
+
+            if (response.ok) {
+              const data = await response.json();
+              console.log(`✅ BATCH SAVE SUCCESS - Server confirms ${data.totalQuestions} total questions now.`);
+              
+              // Flash a brief success message on the button
+              if (finalizeBtn) {
+                  finalizeBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+                  finalizeBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Saved Successfully!';
+                  setTimeout(() => {
+                      finalizeBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                      finalizeBtn.innerHTML = originalBtnContent;
+                      finalizeBtn.disabled = false;
+                  }, 2000);
+              }
+            } else {
+              const errorData = await response.json();
+              throw new Error(errorData.message || 'Failed to save questions');
+            }
+          } catch (error) {
+            console.error(`❌ BATCH SAVE ERROR: ${error.message}`);
+            alert('⚠️ Error saving some questions to database. Please check your connection and try clicking "Finalize" again.');
             
-            savePromises.push(savePromise);
-          });
-          
-          // Log final message after all submissions complete
-          Promise.all(savePromises).then(() => {
-            console.log(`✅ DATABASE SAVE COMPLETE - Saved: ${savedCount}/${questionsToSave.length} | Failed: ${failedCount}`);
-          });
+            // Reset button on error so they can try to finalize again
+            if (finalizeBtn) {
+                finalizeBtn.disabled = false;
+                finalizeBtn.innerHTML = originalBtnContent;
+            }
+          }
         }
         
         // ===== END GLOBAL HELPERS =====
@@ -728,6 +710,3 @@
           box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
         }
       </style>
-</body>
-
-</html>

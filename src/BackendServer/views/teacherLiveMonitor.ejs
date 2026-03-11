@@ -23,19 +23,9 @@
             70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
             100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
-        .monitor-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-            padding: 1.5rem;
-            height: 100%;
-        }
         .feed-container {
             max-height: 500px;
             overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--primary) transparent;
         }
         .feed-container::-webkit-scrollbar {
             width: 6px;
@@ -49,9 +39,13 @@
             border-radius: 12px;
             margin-bottom: 0.75rem;
             border-left: 4px solid transparent;
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.035);
             transition: all 0.3s ease;
             animation: slideIn 0.3s ease-out;
+        }
+        .feed-item:hover {
+            background: rgba(255, 255, 255, 0.07);
+            transform: translateX(5px);
         }
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -59,7 +53,7 @@
         }
         .feed-item.join { border-left-color: #3b82f6; }
         .feed-item.submit { border-left-color: #10b981; }
-        .feed-item.violation { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+        .feed-item.violation { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
         
         .student-item {
             display: flex;
@@ -75,7 +69,7 @@
     <div class="row">
         <!-- Live Activity Feed -->
         <div class="col-lg-8 mb-4">
-            <div class="monitor-card d-flex flex-column">
+            <div class="glass-card d-flex flex-column h-100">
                 <h5 class="font-weight-bold mb-4 border-bottom pb-2" style="border-color: var(--glass-border) !important;">
                     <i class="fas fa-stream mr-2 text-primary"></i> Live Activity Feed
                 </h5>
@@ -90,7 +84,7 @@
 
         <!-- Active Students Roster & Stats -->
         <div class="col-lg-4 mb-4">
-            <div class="monitor-card mb-4" style="background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.05) 100%);">
+            <div class="glass-card mb-4" style="background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.05) 100%);">
                 <h5 class="font-weight-bold mb-3"><i class="fas fa-chart-pie mr-2 text-primary"></i> Live Overview</h5>
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-light">Active Connections:</span>
@@ -106,7 +100,7 @@
                 </div>
             </div>
 
-            <div class="monitor-card d-flex flex-column" style="height: calc(100% - 170px);">
+            <div class="glass-card d-flex flex-column" style="height: calc(100% - 170px);">
                 <h6 class="font-weight-bold mb-3 border-bottom pb-2" style="border-color: var(--glass-border) !important;">
                     <i class="fas fa-users mr-2 text-primary"></i> Students Online
                 </h6>

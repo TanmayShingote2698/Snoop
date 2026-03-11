@@ -147,9 +147,133 @@ router.get("/showStudents", (req, res) => {
 
 // Student Home
 router.get("/home", checkAuthenticated, (req, res) => {
-  // Use session email if query param is missing (security hardening)
   const email = req.session.user.email;
-  res.render("studentHome", { email, hideHome: true });
+  const name = req.session.user.name; // retrieve name for dashboard
+
+  // Step 1: Fetch student results
+  const resultOptions = {
+    url: 'http://127.0.0.1:200/getStudentResult',
+    json: true,
+    body: {
+      "studentEmail": email,
+    }
+  };
+
+  request.post(resultOptions, (err, resp, body) => {
+    let results = [];
+    if (!err && body && body.result) {
+        results = body.result;
+    } else if (err) {
+        console.error("Error fetching student results:", err);
+    }
+    
+    // Step 2: Fetch all tests to enrich history with dates/times
+    const testOptions = {
+      url: 'http://127.0.0.1:100/getAllTest',
+      json: true
+    };
+
+    request.post(testOptions, (errTest, respTest, bodyTest) => {
+        if (!errTest && bodyTest) {
+            // Merge test dates into results
+            results = results.map(r => {
+                const matchDetails = bodyTest.find(t => String(t.test_details.id) === String(r.test_id));
+                if (matchDetails) {
+                    const d = matchDetails.test_details;
+                    return {
+                        ...r,
+                        start_date: d.start_date || 'N/A',
+                        start_time: d.start_time || 'N/A',
+                        end_date: d.end_date || 'N/A',
+                        end_time: d.end_time || 'N/A'
+                    };
+                }
+                return r;
+            });
+        }
+
+        res.render("studentHome", { 
+            email, 
+            name,
+            hideHome: true,
+            results: results
+        });
+    });
+  });
+});
+
+// Profile Routes
+router.get("/profile", checkAuthenticated, (req, res) => {
+    res.render("profile", {
+        user: req.session.user,
+        hideHome: true,
+        currentPage: 'profile'
+    });
+});
+
+router.post("/profile", checkAuthenticated, upload.single('photo'), (req, res) => {
+    let photoUrl = req.file ? req.file.path : req.session.user.photo_url;
+    let newName = req.body.name || req.session.user.name;
+
+    const options = {
+        url: 'http://127.0.0.1:300/updateProfile',
+        json: true,
+        body: {
+            email: req.session.user.email,
+            role: req.session.user.role,
+            name: newName,
+            photo_url: photoUrl
+        }
+    };
+
+    request.post(options, (err, resp, body) => {
+        if (!err && body && body.status) {
+            req.session.user.name = newName;
+            req.session.user.photo_url = photoUrl;
+            res.redirect("/student/profile?success=" + encodeURIComponent("Profile updated successfully."));
+        } else {
+            console.error("Profile update error:", err || body);
+            res.redirect("/student/profile?error=" + encodeURIComponent("Failed to update profile."));
+        }
+    });
+});
+
+// Security Routes
+router.get("/security", checkAuthenticated, (req, res) => {
+    res.render("security", {
+        user: req.session.user,
+        hideHome: true,
+        currentPage: 'security'
+    });
+});
+
+router.post("/security", checkAuthenticated, (req, res) => {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    
+    if (newPassword !== confirmPassword) {
+        return res.redirect("/student/security?error=" + encodeURIComponent("New passwords do not match."));
+    }
+
+    const options = {
+        url: 'http://127.0.0.1:300/changePassword',
+        json: true,
+        body: {
+            email: req.session.user.email,
+            role: req.session.user.role,
+            currentPassword: currentPassword,
+            newPassword: newPassword
+        }
+    };
+
+    request.post(options, (err, resp, body) => {
+        if (!err && body && body.status) {
+            res.redirect("/student/security?success=" + encodeURIComponent("Password changed successfully."));
+        } else {
+            console.error("Password change error:", err || body);
+            let errMsg = body && body.message ? body.message : "Failed to change password. Ensure current password is correct.";
+            res.redirect("/student/security?error=" + encodeURIComponent(errMsg));
+        }
+    });
 });
 
 // Show all tests to student
@@ -189,15 +313,6 @@ router.post("/showAllTests", checkAuthenticated, (req, res) => {
 
 // Give Test
 router.post("/takeTest", checkAuthenticated, (req, res) => {
-  // AI Proctoring: Start Anomaly Server EARLIER (during DB/Sync processing)
-  const anomalyOptions = {
-    url: 'http://127.0.0.1:5001/start',
-    method: 'POST'
-  };
-  request.post(anomalyOptions, (err, resp, body) => {
-    if (err) console.log("Anomaly Server Early Trigger Error:", err.message);
-    else console.log("Anomaly Server Early Trigger Response:", body);
-  });
 
   // Always fetch the live tests array from the teacher module source of truth
   const teacherModule = require("./teacher");
@@ -376,8 +491,7 @@ router.post("/startExam", checkAuthenticated, (req, res) => {
   res.render("takeTestByStudent", {
     test,
     email: req.body.email,
-    hideHome: true,
-    aiProctoring: true // Pulse badge active
+    hideHome: true
   });
 });
 
@@ -425,24 +539,10 @@ router.post('/submitTest', (req, res) => {
   }
   responseOfStudent.qna = qna;
 
-  // AI Proctoring: Stop Anomaly Server and get score
-  const anomalyStopOptions = {
-    url: 'http://127.0.0.1:5001/stop',
-    method: 'POST',
-    json: true
-  };
+  let integrityScore = 100; // Default
 
-  request.post(anomalyStopOptions, (anomalyErr, anomalyResp, anomalyBody) => {
-    let integrityScore = 100; // Default
-    if (!anomalyErr && anomalyBody && anomalyBody.status === 'success') {
-      integrityScore = anomalyBody.score;
-      console.log("Final Integrity Score from AI:", integrityScore);
-    } else {
-      console.log("Anomaly Server Stop Error or invalid response:", anomalyErr || anomalyBody);
-    }
-
-    const options = {
-      url: 'http://127.0.0.1:200/' + 'scoreAndStore',
+  const options = {
+    url: 'http://127.0.0.1:200/' + 'scoreAndStore',
       json: true,
       body: {
         'response': {
@@ -463,7 +563,6 @@ router.post('/submitTest', (req, res) => {
     });
   });
 
-})
 
 router.get('/GetResultByEmail', (req, res) => {
   const email = req.query.email || "";

@@ -1,4 +1,4 @@
-<div class="row mb-4 align-items-center">
+<div class="row mb-4 align-items-center" style="margin-top: 5px;">
     <div class="col-md-8">
         <h2 class="font-weight-bold p-0 m-0" style="color: var(--text-base);">
             <i class="fas fa-chart-bar mr-2" style="color: var(--secondary);"></i>
@@ -37,15 +37,15 @@
                                     if (r.integrity < 50) integrityColor = '#ef4444'; // Red
                                     else if (r.integrity < 80) integrityColor = '#fbbf24'; // Yellow
                                 %>
-                                <tr style="border-bottom: 1px solid var(--glass-border); transition: background 0.3s; cursor: default;">
+                                <tr class="snoop-table-row" style="border-bottom: 1px solid var(--glass-border); transition: background 0.3s; cursor: default;">
                                     <td class="align-middle py-3">
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar-circle mr-3" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                            <div class="avatar-circle mr-3" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
                                                 <%= r.email.substring(0, 1).toUpperCase() %>
                                             </div>
                                             <div>
-                                                <h6 class="mb-0" style="color: var(--text-base);"><%= r.email %></h6>
-                                                <small class="text-dim">Student ID: <%= r.student_id %></small>
+                                                <h6 class="mb-0 font-weight-bold" style="color: var(--text-base);"><%= r.email %></h6>
+                                                <small class="text-dim">ID: <%= r.student_id %></small>
                                             </div>
                                         </div>
                                     </td>
@@ -53,10 +53,12 @@
                                         <span class="fs-5 font-weight-bold" style="color: var(--secondary);"><%= r.final_score %></span>
                                     </td>
                                     <td class="align-middle text-center py-3 text-dim">
-                                        <%= r.mcq_score %> + <%= r.subjective_score %>
+                                        <span class="badge badge-dark border" style="border-color: var(--glass-border) !important; background: rgba(255,255,255,0.05);">
+                                            <%= r.mcq_score %> + <%= r.subjective_score %>
+                                        </span>
                                     </td>
                                     <td class="align-middle text-center py-3">
-                                        <span class="badge badge-pill px-3 py-2" style="background: <%= integrityColor %>33; color: <%= integrityColor %>; font-size: 0.9rem;">
+                                        <span class="badge badge-pill px-3 py-2" style="background: <%= integrityColor %>33; color: <%= integrityColor %>; border: 1px solid <%= integrityColor %>44; font-size: 0.9rem;">
                                             <%= r.integrity %>%
                                         </span>
                                     </td>
@@ -98,7 +100,7 @@
 </div>
 
 <style>
-    .table-hover tbody tr:hover {
-        background-color: rgba(255, 255, 255, 0.05) !important;
+    .snoop-table-row:hover {
+        background-color: rgba(255, 255, 255, 0.04) !important;
     }
 </style>

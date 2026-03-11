@@ -45,7 +45,8 @@ class getStudentResult(Resource):
                 'generated':r['generated'],
                 'answers':r['answers'],
                 'integrity':r['integrity'],
-                'subjective_score':r['subjective_score']
+                'subjective_score':r['subjective_score'],
+                'created_at': r.get('created_at', None)
             }
             bigjson.append(jsondata)
         

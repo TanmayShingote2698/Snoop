@@ -1,16 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <script src="/socket.io/socket.io.js"></script>
-</head>
-
-<body>
   <input type="number" style="display: none;" value="<%= test.testDuration %>" name="testDuration" id="testDuration">
-  <h3 id="timer"></h3>
+  <h3 id="timer" style="display: none;"></h3>
   <div class="exam-header d-flex justify-content-between align-items-center mb-5 p-4 glass-card"
     style="position: sticky; top: 80px; z-index: 100;">
     <div>
@@ -20,11 +9,6 @@
       <div class="d-flex align-items-center mt-1">
         <p class="text-dim mb-0 small mr-3">Student: <%= email %>
         </p>
-        <% if (locals.aiProctoring) { %>
-          <span class="badge badge-danger ai-pulse">
-            <i class="fas fa-eye mr-1"></i> AI Proctoring Active
-          </span>
-          <% } %>
       </div>
     </div>
     <style>
@@ -63,6 +47,41 @@
     <input type="hidden" name="testID" value="<%= test.id %>">
     <input type="hidden" name="tabSwitchData" id="tabSwitchData" value="[]">
 
+    <style>
+      .option-card {
+        cursor: pointer;
+        transition: all 0.25s ease;
+        border: 1px solid var(--glass-border);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .option-card:hover {
+        background: rgba(255, 255, 255, 0.06) !important;
+        border-color: var(--primary)88;
+        transform: translateY(-2px);
+      }
+
+      .option-card.selected {
+        background: rgba(59, 130, 246, 0.1) !important;
+        border: 1px solid var(--primary);
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+      }
+
+      .option-badge {
+        width: 30px;
+        height: 30px;
+        background: var(--primary);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+    </style>
+
     <% for(var i=0 ; i < test.questions.length ; i++ ){ %>
       <div class="glass-card mb-4 p-4">
         <div class="d-flex align-items-start mb-3">
@@ -78,43 +97,7 @@
               rows="6"></textarea>
           </div>
           <% } else { %>
-            <style>
-              .option-card {
-                cursor: pointer;
-                transition: all 0.3s ease;
-                border: 1px solid var(--glass-border);
-                /* Visible border by default */
-                background: rgba(255, 255, 255, 0.02);
-              }
 
-              .option-card:hover {
-                background: rgba(255, 255, 255, 0.08) !important;
-                border-color: var(--primary);
-                /* Highlight border on hover */
-                transform: translateY(-2px);
-              }
-
-              .option-card.selected {
-                background: rgba(59, 130, 246, 0.15) !important;
-                /* Stronger selection bg */
-                border: 1px solid var(--primary);
-                box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-              }
-
-              .option-badge {
-                width: 30px;
-                height: 30px;
-                background: var(--primary);
-                color: #fff;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                margin-right: 15px;
-                box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
-              }
-            </style>
 
             <div class="options-grid mt-3 ml-4">
               <!-- Hidden Input to store the selected answer (1-4) -->
@@ -280,6 +263,10 @@
         if (elem.requestFullscreen) {
             elem.requestFullscreen().then(() => {
                 document.getElementById('fullscreenOverlay').style.display = 'none';
+                // Attempt to lock keys (like Escape) to prevent easy fullscreen exit
+                if (navigator.keyboard && navigator.keyboard.lock) {
+                    navigator.keyboard.lock(['Escape']).catch(console.error);
+                }
             }).catch(err => {
                 // Swal.fire("Error enabling fullscreen: " + err.message);
             });
@@ -441,6 +428,10 @@
 
     // 5. Disable Keyboard Shortcuts (Ctrl+C, Ctrl+V, Alt+Tab prevention attempt)
     document.onkeydown = function(e) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            return false;
+        }
         if (e.ctrlKey && (e.keyCode === 67 || e.keyCode === 86 || e.keyCode === 85)) { // Ctrl+C, V, U
             Swal.fire({
                 icon: 'error',

@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Document</title>
-</head>
-
-<body>
   <div class="text-center mb-5">
     <h2 class="font-weight-bold">Create New Examination</h2>
     <p class="text-dim">Design your test by adding MCQ or Subjective questions.</p>
@@ -112,32 +102,26 @@
       question.type = type;
     }
 
-    document
-      .getElementById("submitmcq")
-      .addEventListener("click", function () {
-        let question = {};
-        question.type = "mcq";
-        question.question = document.getElementById("mcqquestion").value;
-        question.op1 = document.getElementById("op1").value;
-        question.op2 = document.getElementById("op2").value;
-        question.op3 = document.getElementById("op3").value;
-        question.op4 = document.getElementById("op4").value;
-        question.ans = document.getElementById("answer").value;
-        //   console.log(question.question);
-        questions.push(question);
-        document.getElementById("mcqform").style.display = "none";
-      });
+    document.getElementById("submitmcq").addEventListener("click", function () {
+      let question = {};
+      question.type = "mcq";
+      question.question = document.getElementById("mcqquestion").value;
+      question.op1 = document.getElementById("op1").value;
+      question.op2 = document.getElementById("op2").value;
+      question.op3 = document.getElementById("op3").value;
+      question.op4 = document.getElementById("op4").value;
+      question.ans = document.getElementById("answer").value;
+      questions.push(question);
+      document.getElementById("mcqform").style.display = "none";
+    });
 
-    document
-      .getElementById("submitsub")
-      .addEventListener("click", function () {
-        let question = {};
-        question.type = "subjective";
-        question.question = document.getElementById("subquestion").value;
-        //   console.log(question.question);
-        questions.push(question);
-        document.getElementById("subform").style.display = "none";
-      });
+    document.getElementById("submitsub").addEventListener("click", function () {
+      let question = {};
+      question.type = "subjective";
+      question.question = document.getElementById("subquestion").value;
+      questions.push(question);
+      document.getElementById("subform").style.display = "none";
+    });
 
     function displayQuestionsFunction(check) {
       console.log(questions);
@@ -181,7 +165,3 @@
         displayQuestionsFunction();
       });
   </script>
-  <!-- <script src="createTest.js"></script> -->
-</body>
-
-</html>

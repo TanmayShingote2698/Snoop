@@ -138,6 +138,62 @@ api.add_resource(verifyStudent, '/verifyStudent')
 api.add_resource(verifyAdmin, '/verifyAdmin')
 api.add_resource(validateStudent, '/validateStudent')
 
+class UpdateProfile(Resource):
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('email', type=str, required=True, help="Email is required")
+        self.parser.add_argument('role', type=str, required=True, help="Role is required")
+        self.parser.add_argument('name', type=str, required=True, help="Name is required")
+        self.parser.add_argument('photo_url', type=str, required=False)
+
+    def post(self):
+        print("Update Profile Called")
+        args = self.parser.parse_args()
+        
+        table = "admin" if args['role'] == "teacher" else "student"
+        update_data = {"name": args['name']}
+        
+        if args['photo_url'] and table == "student":
+            update_data["photo_url"] = args['photo_url']
+            
+        success = authFunc.db.updateEntry(table, {"email": args['email'].lower()}, update_data)
+        
+        if success:
+            return {'status': True, 'message': 'Profile updated'}
+        return {'status': False, 'message': 'Failed to update profile'}, 400
+
+class ChangePasswordSecure(Resource):
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('email', type=str, required=True, help="Email is required")
+        self.parser.add_argument('role', type=str, required=True, help="Role is required")
+        self.parser.add_argument('currentPassword', type=str, required=True, help="Current password is required")
+        self.parser.add_argument('newPassword', type=str, required=True, help="New password is required")
+
+    def post(self):
+        print("Secure Change Password Called")
+        args = self.parser.parse_args()
+        email = args['email'].lower()
+        
+        # Verify current password first
+        if args['role'] == 'teacher':
+            verify_result = authFunc.verifyAdmin(email, args['currentPassword'])
+        else:
+            verify_result = authFunc.verifyStudent(email, args['currentPassword'])
+            
+        if not verify_result or not isinstance(verify_result, dict) or not verify_result.get('status'):
+            return {'status': False, 'message': 'Incorrect current password'}, 400
+            
+        # If valid, update to new password
+        success = authFunc.updatePassword(email, args['newPassword'])
+        
+        if success:
+            return {'status': True, 'message': 'Password changed successfully'}
+        return {'status': False, 'message': 'Failed to update password in database'}, 500
+
+api.add_resource(UpdateProfile, '/updateProfile')
+api.add_resource(ChangePasswordSecure, '/changePassword')
+
 class UpdatePassword(Resource):
     def __init__(self):
         self.parser = reqparse.RequestParser()

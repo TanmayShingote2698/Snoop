@@ -102,6 +102,62 @@ router.post("/submitQues", (req, res) => {
     }
 });
 
+// Submit multiple questions at once (Batch)
+router.post("/submitQuestionsBatch", checkAuthenticated, (req, res) => {
+    const { testID, questions: newQuestions } = req.body;
+    
+    console.log(`\n📦 submitQuestionsBatch called for Test ID: ${testID}`);
+    console.log(`   Attempting to add ${newQuestions ? newQuestions.length : 0} questions`);
+    
+    if (!newQuestions || !Array.isArray(newQuestions)) {
+        return res.status(400).json({ success: false, message: "Invalid questions array provided." });
+    }
+
+    let testIndex = tests.findIndex(t => t.id === testID);
+    
+    if (testIndex === -1) {
+        console.log(`   ❌ Test ${testID} not found in memory.`);
+        return res.status(404).json({ success: false, message: "Test not found." });
+    }
+
+    // RBAC Check
+    if (tests[testIndex].created_by && tests[testIndex].created_by !== req.session.user.email) {
+        console.log(`   ❌ RBAC Violation: User ${req.session.user.email} tried to add batch questions to test ${testID}`);
+        return res.status(403).json({ success: false, message: "Permission denied." });
+    }
+
+    console.log(`   Before batch add: ${tests[testIndex].questions.length} questions`);
+    
+    // Add questions to the test
+    newQuestions.forEach(q => {
+        const questionObj = {
+            question: q.question,
+            type: q.type || 'mcq',
+            ind: tests[testIndex].questions.length + 1
+        };
+
+        if (questionObj.type === 'mcq') {
+            questionObj.op1 = q.op1 || '';
+            questionObj.op2 = q.op2 || '';
+            questionObj.op3 = q.op3 || '';
+            questionObj.op4 = q.op4 || '';
+            questionObj.answer = q.answer || '';
+        } else {
+            questionObj.answer = q.answer || '';
+        }
+
+        tests[testIndex].questions.push(questionObj);
+    });
+
+    console.log(`   ✅ Batch add complete: ${tests[testIndex].questions.length} total questions`);
+    
+    res.json({
+        success: true,
+        message: `Successfully added ${newQuestions.length} questions.`,
+        totalQuestions: tests[testIndex].questions.length
+    });
+});
+
 // Delete a question from test
 router.post("/deleteQuestion", (req, res) => {
     const { testID, questionIndex } = req.body;
@@ -512,6 +568,80 @@ router.post("/deleteTest", checkAuthenticated, (req, res) => {
             req.session.successMessage = "Test deleted successfully!";
             res.redirect("/teacher/showAllTests");
         });
+    });
+});
+
+// Profile Routes
+router.get("/profile", checkAuthenticated, (req, res) => {
+    res.render("profile", {
+        user: req.session.user,
+        hideHome: true,
+        currentPage: 'profile'
+    });
+});
+
+router.post("/profile", checkAuthenticated, upload.single('photo'), (req, res) => {
+    let photoUrl = req.file ? req.file.path : req.session.user.photo_url;
+    let newName = req.body.name || req.session.user.name;
+
+    const options = {
+        url: 'http://127.0.0.1:300/updateProfile',
+        json: true,
+        body: {
+            email: req.session.user.email,
+            role: req.session.user.role,
+            name: newName,
+            photo_url: photoUrl
+        }
+    };
+
+    request.post(options, (err, resp, body) => {
+        if (!err && body && body.status) {
+            req.session.user.name = newName;
+            req.session.user.photo_url = photoUrl;
+            res.redirect("/teacher/profile?success=" + encodeURIComponent("Profile updated successfully."));
+        } else {
+            console.error("Profile update error:", err || body);
+            res.redirect("/teacher/profile?error=" + encodeURIComponent("Failed to update profile."));
+        }
+    });
+});
+
+// Security Routes
+router.get("/security", checkAuthenticated, (req, res) => {
+    res.render("security", {
+        user: req.session.user,
+        hideHome: true,
+        currentPage: 'security'
+    });
+});
+
+router.post("/security", checkAuthenticated, (req, res) => {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    
+    if (newPassword !== confirmPassword) {
+        return res.redirect("/teacher/security?error=" + encodeURIComponent("New passwords do not match."));
+    }
+
+    const options = {
+        url: 'http://127.0.0.1:300/changePassword',
+        json: true,
+        body: {
+            email: req.session.user.email,
+            role: req.session.user.role,
+            currentPassword: currentPassword,
+            newPassword: newPassword
+        }
+    };
+
+    request.post(options, (err, resp, body) => {
+        if (!err && body && body.status) {
+            res.redirect("/teacher/security?success=" + encodeURIComponent("Password changed successfully."));
+        } else {
+            console.error("Password change error:", err || body);
+            let errMsg = body && body.message ? body.message : "Failed to change password. Ensure current password is correct.";
+            res.redirect("/teacher/security?error=" + encodeURIComponent(errMsg));
+        }
     });
 });
 
