@@ -1,7 +1,8 @@
+  <script src="/socket.io/socket.io.js"></script>
   <input type="number" style="display: none;" value="<%= test.testDuration %>" name="testDuration" id="testDuration">
-  <h3 id="timer" style="display: none;"></h3>
+  
   <div class="exam-header d-flex justify-content-between align-items-center mb-5 p-4 glass-card"
-    style="position: sticky; top: 80px; z-index: 100;">
+    style="position: relative; z-index: 100;">
     <div>
       <h4 class="font-weight-bold mb-0">Examination: <span style="color: var(--primary);">
           <%= test.id %>
@@ -46,6 +47,8 @@
     <input type="hidden" name="email" value="<%= email %>">
     <input type="hidden" name="testID" value="<%= test.id %>">
     <input type="hidden" name="tabSwitchData" id="tabSwitchData" value="[]">
+    <input type="hidden" name="fullscreenData" id="fullscreenData" value="[]">
+    <input type="hidden" name="actionLogs" id="actionLogs" value="[]">
 
     <style>
       .option-card {
@@ -203,46 +206,98 @@
     // --- STRICT PROCTORING ENFORCEMENT & LOGGING ---
 
     let isSubmitting = false;
-    let proctoringLogs = []; // Renamed from tabSwitchLogs for clarity, but still sent to 'tabSwitchData' input
+    let tabSwitchLogs = []; 
+    let fullscreenLogs = []; 
+    let actionLogs = []; // Master list of instant actions (keys, mouse leaves)
     let awayStartTime = null;
     let fullscreenExitStartTime = null;
 
     // --- REAL-TIME MONITORING (Socket.IO) ---
-    const socket = io(); // Connect to the WebSocket Server
+    // Make sure socket.io is loaded before calling io()
+    var socket = null;
+    if (typeof io !== 'undefined') {
+        socket = io(); // Connect to the WebSocket Server
+    } else {
+        console.error("Socket.IO client library not found. Real-time reporting disabled.");
+    }
     const studentEmail = "<%= email %>";
     const currentTestID = "<%= test.id %>";
 
     // Join the specific test room immediately
-    socket.emit('join_test_room', currentTestID);
+    if (socket) {
+        socket.emit('join_test_room', currentTestID);
+        // Announce presence to the teacher instantly
+        socket.emit('student_joined', { testID: currentTestID, studentEmail: studentEmail });
+    }
 
     // Helper to log events (and emit them in real-time)
     function logEvent(type, startTime, endTime) {
         let duration = (endTime - startTime) / 1000;
         
         const eventData = {
-            type: type, // 'TAB_SWITCH' or 'FULLSCREEN_EXIT'
+            type: type, 
             startTime: startTime.toISOString(),
             endTime: endTime.toISOString(),
             durationSeconds: duration
         };
         
-        proctoringLogs.push(eventData);
+        if (type === 'TAB_SWITCH') {
+            tabSwitchLogs.push(eventData);
+        } else if (type === 'FULLSCREEN_EXIT') {
+            fullscreenLogs.push(eventData);
+        }
+        
         updateHiddenInput();
 
         // Broadcast the violation to the teacher instantly
-        socket.emit('student_activity', {
-            testID: currentTestID,
-            studentEmail: studentEmail,
-            activityType: type,
-            timestamp: new Date().toISOString(),
-            details: eventData
-        });
+        if (socket) {
+            socket.emit('student_activity', {
+                testID: currentTestID,
+                studentEmail: studentEmail,
+                activityType: type,
+                timestamp: new Date().toISOString(),
+                details: eventData
+            });
+        }
+    }
+
+    // Helper for instant alerts (doesn't wait for duration like logEvent does)
+    function emitInstantViolation(type, msg) {
+        if (!isSubmitting) {
+            // Log it locally for database
+            actionLogs.push({
+                type: type,
+                message: msg,
+                timestamp: new Date().toISOString()
+            });
+            updateHiddenInput();
+
+            // Broadcast real-time
+            if (socket) {
+                socket.emit('student_activity', {
+                    testID: currentTestID,
+                    studentEmail: studentEmail,
+                    activityType: type,
+                    details: { message: msg },
+                    timestamp: new Date().toISOString()
+                });
+            }
+        }
     }
 
     function updateHiddenInput() {
-        let logInput = document.getElementById('tabSwitchData');
-        if(logInput) {
-            logInput.value = JSON.stringify(proctoringLogs);
+        let tabInput = document.getElementById('tabSwitchData');
+        let fullInput = document.getElementById('fullscreenData');
+        let actionInput = document.getElementById('actionLogs');
+        
+        if(tabInput) {
+            tabInput.value = JSON.stringify(tabSwitchLogs);
+        }
+        if(fullInput) {
+            fullInput.value = JSON.stringify(fullscreenLogs);
+        }
+        if(actionInput) {
+            actionInput.value = JSON.stringify(actionLogs);
         }
     }
 
@@ -263,28 +318,42 @@
         if (elem.requestFullscreen) {
             elem.requestFullscreen().then(() => {
                 document.getElementById('fullscreenOverlay').style.display = 'none';
-                // Attempt to lock keys (like Escape) to prevent easy fullscreen exit
+                
+                // Show a brief success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Environment Locked',
+                    text: 'Proctoring is active. Good luck!',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+
                 if (navigator.keyboard && navigator.keyboard.lock) {
                     navigator.keyboard.lock(['Escape']).catch(console.error);
                 }
             }).catch(err => {
-                // Swal.fire("Error enabling fullscreen: " + err.message);
+                console.error("Fullscreen Request Failed:", err);
             });
         }
     }
 
     // Check Fullscreen on Load
-    if (!document.fullscreenElement) {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
         document.getElementById('fullscreenOverlay').style.display = 'flex';
     } else {
         document.getElementById('fullscreenOverlay').style.display = 'none';
     }
 
-    // Monitor Fullscreen Changes
-    document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement && !isSubmitting) {
+    // Monitor Fullscreen Changes (Handling all browser prefixes)
+    const handleFullscreenChange = () => {
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        
+        if (!isFullscreen && !isSubmitting) {
             // EXITED Fullscreen
             fullscreenExitStartTime = new Date();
+            emitInstantViolation('FULLSCREEN_EXIT_INSTANT', 'Exited fullscreen mode');
             
             document.getElementById('fullscreenOverlay').style.display = 'flex';
             Swal.fire({
@@ -316,14 +385,39 @@
             // ENTERED Fullscreen
             document.getElementById('fullscreenOverlay').style.display = 'none';
         }
-    });
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange); // Chrome, Safari, Opera
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);    // Firefox
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);     // IE/Edge
 
     // 1. Disable Right Click
-    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        Swal.fire({
+            icon: 'error',
+            title: 'Action Blocked!',
+            text: 'Right-click is restricted during the exam.',
+            confirmButtonColor: '#ef4444',
+            timer: 2000,
+            toast: true,
+            position: 'top-end'
+        });
+    });
 
     // 2. Disable Copy/Cut/Paste
     document.oncut = document.oncopy = document.onpaste = function(event) {
         event.preventDefault();
+        Swal.fire({
+            icon: 'error',
+            title: 'Action Blocked!',
+            text: 'Clipboard operations are restricted.',
+            confirmButtonColor: '#ef4444',
+            timer: 2000,
+            toast: true,
+            position: 'top-end'
+        });
         return false;
     };
 
@@ -332,6 +426,7 @@
         if (document.hidden && !isSubmitting) {
             // User left the tab
             awayStartTime = new Date();
+            emitInstantViolation('TAB_SWITCH_INSTANT', 'Switched tabs or minimized');
             
             Swal.fire({
                 icon: 'warning',
@@ -350,9 +445,37 @@
         }
     });
 
+    // Detect Window Focus Loss (Mini windows or Overlays)
+    window.addEventListener('blur', function() {
+        if (!isSubmitting) {
+            emitInstantViolation('WINDOW_BLUR', 'Lost window focus');
+            // We can treat this as a tab switch for DB logging as well
+            if (!awayStartTime) {
+                awayStartTime = new Date();
+            }
+        }
+    });
+
+    window.addEventListener('focus', function() {
+        if (!isSubmitting && awayStartTime && !document.hidden) {
+            let awayEndTime = new Date();
+            logEvent('TAB_SWITCH', awayStartTime, awayEndTime);
+            awayStartTime = null;
+        }
+    });
+
+    // Detect Mouse Leaving the Window (Moving out of viewport)
+    document.addEventListener('mouseleave', function(e) {
+        if (!isSubmitting) {
+            if (e.clientY <= 0 || e.clientX <= 0 || (e.clientX >= window.innerWidth || e.clientY >= window.innerHeight)) {
+                emitInstantViolation('MOUSE_LEAVE', 'Cursor left the test window');
+            }
+        }
+    });
+
     // Handle Submit Button Click (Ensures warnings are suppressed)
     document.getElementById('endTestId').onclick = function() {
-        if (!isSubmitting) {
+        if (!isSubmitting && socket) {
             socket.emit('student_submitted', { testID: currentTestID, studentEmail: studentEmail });
         }
         isSubmitting = true;
@@ -367,7 +490,7 @@
     
     // Also listen to the actual submit event
     document.getElementById('testFormID').addEventListener('submit', function() {
-        if (!isSubmitting) {
+        if (!isSubmitting && socket) {
             socket.emit('student_submitted', { testID: currentTestID, studentEmail: studentEmail });
         }
         isSubmitting = true;
@@ -378,6 +501,7 @@
       // 1. Trap Back Button
       history.pushState(null, null, location.href);
       window.onpopstate = function () {
+        history.pushState(null, null, location.href); // Immediately re-trap the state
         Swal.fire({
             title: 'Leave Exam?',
             text: "Do you want to submit your test and leave?",
@@ -385,15 +509,13 @@
             showCancelButton: true,
             confirmButtonText: 'Yes, Submit & Leave',
             cancelButtonText: 'No, Stay',
-            confirmButtonColor: '#ef4444', // Red for dangerous action
+            confirmButtonColor: '#ef4444', 
             cancelButtonColor: 'var(--primary)',
             reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
                 isSubmitting = true;
                 document.getElementById('testFormID').submit();
-            } else {
-                history.pushState(null, null, location.href); // Re-trap
             }
         });
       };
@@ -426,25 +548,89 @@
     // Handle Timer Auto-Submit
     // (Note: The timer logic uses click() on endTestId, so it is covered)
 
-    // 5. Disable Keyboard Shortcuts (Ctrl+C, Ctrl+V, Alt+Tab prevention attempt)
-    document.onkeydown = function(e) {
-        if (e.key === 'Escape') {
+    // Aggressive capture phase listeners to completely kill restricted keys before ANY element or popup gets them
+    const blockKeys = function(e) {
+        let keyChar = e.key ? e.key.toLowerCase() : '';
+        
+        // Block F11 and F12
+        if (e.key === 'F11' || e.keyCode === 122 || e.key === 'F12' || e.keyCode === 123) {
             e.preventDefault();
+            e.stopPropagation();
+            if (e.type === 'keydown') {
+                emitInstantViolation('PROHIBITED_KEY', e.key);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Function Keys Disabled',
+                    text: 'F11 and F12 shortcuts are strictly prohibited.',
+                    confirmButtonColor: '#ef4444',
+                    timer: 2000,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }
             return false;
         }
-        if (e.ctrlKey && (e.keyCode === 67 || e.keyCode === 86 || e.keyCode === 85)) { // Ctrl+C, V, U
-            Swal.fire({
-                icon: 'error',
-                title: 'Action Blocked!',
-                text: 'Copy/Paste shortcuts are strictly prohibited.',
-                confirmButtonColor: '#ef4444',
-                timer: 2000,
-                timerProgressBar: true
-            });
+
+        // Block Escape
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.type === 'keydown' && document.fullscreenElement) {
+                emitInstantViolation('PROHIBITED_KEY', 'Escape');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Escape Key Restricted',
+                    text: 'Please use the Submit button to exit the test.',
+                    confirmButtonColor: 'var(--primary)',
+                    timer: 3000,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }
+            return false;
+        }
+
+        // Block Alt and Windows(Meta) Keys
+        if (e.altKey || e.metaKey || e.key === 'Meta' || e.key === 'OS') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.type === 'keydown') {
+                let keyName = e.altKey ? 'Alt Key' : 'Windows/System Key';
+                emitInstantViolation('PROHIBITED_KEY', keyName);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Action Blocked!',
+                    text: `${keyName} combinations are strictly prohibited.`,
+                    confirmButtonColor: '#ef4444',
+                    timer: 2000,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }
+            return false;
+        }
+
+        // Block ALL Ctrl combinations and DevTools (Ctrl+Shift+I/J/C)
+        if (e.ctrlKey) { 
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.type === 'keydown') {
+                emitInstantViolation('PROHIBITED_KEY', 'Ctrl Combination');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Action Blocked!',
+                    text: 'Control key shortcuts are strictly prohibited.',
+                    confirmButtonColor: '#ef4444',
+                    timer: 2000,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }
             return false;
         }
     };
-  </script>
-</body>
 
-</html>
+    window.addEventListener('keydown', blockKeys, true); // true = capture phase
+    window.addEventListener('keyup', blockKeys, true);
+    window.addEventListener('keypress', blockKeys, true);
+  </script>

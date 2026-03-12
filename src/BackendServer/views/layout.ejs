@@ -489,6 +489,7 @@
   <i class="fas fa-chalkboard-teacher floating-icon icon-35"></i>
 
   <!-- Global Top Navbar -->
+  <% if (!locals.isolateTest) { %>
   <nav class="navbar-snoop d-flex justify-content-between align-items-center fixed-top">
     <div class="d-flex align-items-center">
         <!-- Menu Toggle Moved to Sidebar -->
@@ -521,12 +522,13 @@
       <% } %>
     </div>
   </nav>
+  <% } %>
 
   <!-- Sidebar & Main Wrapper Layout -->
-  <div class="d-flex <%= (locals.user && (locals.user.role === 'teacher' || locals.user.role === 'student')) ? 'sidebar-active' : '' %>" id="wrapper">
+  <div class="d-flex <%= (locals.user && (locals.user.role === 'teacher' || locals.user.role === 'student') && !locals.isolateTest) ? 'sidebar-active' : '' %>" id="wrapper">
     
     <!-- Sidebar -->
-    <% if (locals.user && (locals.user.role === 'teacher' || locals.user.role === 'student')) { %>
+    <% if (locals.user && (locals.user.role === 'teacher' || locals.user.role === 'student') && !locals.isolateTest) { %>
     <div class="snoop-sidebar d-flex flex-column" id="sidebar-wrapper">
       <!-- Toggle Button (Top Right of Sidebar) -->
       <div class="d-flex justify-content-between align-items-center p-3" id="sidebar-toggle-container">
@@ -618,8 +620,8 @@
     <% } %>
 
     <!-- Page Content -->
-    <div id="page-content-wrapper" class="w-100">
-      <div class="main-container"><%- body %></div>
+    <div id="page-content-wrapper" class="w-100" style="<%= locals.isolateTest ? 'margin-top: 0 !important; min-height: 100vh !important; display: flex; flex-direction: column; justify-content: center;' : '' %>">
+      <div class="main-container" style="<%= locals.isolateTest ? 'max-width: none; padding: 2rem;' : '' %>"><%- body %></div>
     </div>
   </div>
 

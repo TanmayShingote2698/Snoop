@@ -46,6 +46,7 @@ class getStudentResult(Resource):
                 'answers':r['answers'],
                 'integrity':r['integrity'],
                 'subjective_score':r['subjective_score'],
+                'tab_switch_data': r.get('tab_switch_data', []),
                 'created_at': r.get('created_at', None)
             }
             bigjson.append(jsondata)
@@ -110,7 +111,8 @@ class getStudentResponse(Resource):
                 'generated':r['generated'],
                 'answers':r['answers'],
                 'integrity':r['integrity'],
-                'subjective_score':r['subjective_score']
+                'subjective_score':r['subjective_score'],
+                'tab_switch_data': r.get('tab_switch_data', [])
             }
             bigjson.append(jsondata)
     
@@ -146,7 +148,9 @@ class scoreAndStore(Resource):
         generated=False
         answers=[]
         integrity = response.get("integrity", random.randint(1, 100))
-        tab_switch_data = response.get("tabSwitchData", []) # Extract tab switch logs
+        tab_switch_data = response.get("tabSwitchData", []) 
+        fullscreen_data = response.get("fullscreenData", []) # Extract fullscreen logs
+        action_logs = response.get("actionLogs", []) # Extract granular logs
         subjective_score=random.randint(1,20)
         qna = response["qna"]
         print("=======================================")
@@ -175,7 +179,9 @@ class scoreAndStore(Resource):
                 'generated':generated,
                 'answers':answers,
                 'integrity':integrity,
-                'tab_switch_data': tab_switch_data, # Store in DB
+                'tab_switch_data': tab_switch_data,
+                'fullscreen_data': fullscreen_data, 
+                'action_logs': action_logs, # Store in DB
                 'subjective_score':subjective_score
             }
 

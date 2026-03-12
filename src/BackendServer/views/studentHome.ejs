@@ -163,16 +163,44 @@ function openDetailedResultModal(resultObj) {
 
     // Build Flag HTML
     let flagsHtml = '';
+    
+    let hasViolations = false;
+    let listItems = '';
+
     if(resultObj.tab_switch_data && resultObj.tab_switch_data.length > 0) {
-        flagsHtml += `<div style="text-align: left; margin-bottom: 10px;"><strong>Warning Flags Encountered:</strong></div>`;
+        hasViolations = true;
         resultObj.tab_switch_data.forEach(flag => {
-            flagsHtml += `
+            listItems += `
             <div style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 5px 10px; border-radius: 5px; margin-bottom: 5px; text-align: left; font-size: 0.9em;">
-                <i class="fas fa-exclamation-triangle mr-2"></i> ${flag}
+                <i class="fas fa-exclamation-triangle mr-2"></i> Tab Switch Detected
             </div>`;
         });
+    }
+
+    if(resultObj.fullscreen_data && resultObj.fullscreen_data.length > 0) {
+        hasViolations = true;
+        resultObj.fullscreen_data.forEach(flag => {
+            listItems += `
+            <div style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 5px 10px; border-radius: 5px; margin-bottom: 5px; text-align: left; font-size: 0.9em;">
+                <i class="fas fa-compress mr-2"></i> Fullscreen Exit Detected
+            </div>`;
+        });
+    }
+
+    if(resultObj.action_logs && resultObj.action_logs.length > 0) {
+        hasViolations = true;
+        resultObj.action_logs.forEach(log => {
+            listItems += `
+            <div style="background: rgba(245, 158, 11, 0.1); color: #d97706; padding: 5px 10px; border-radius: 5px; margin-bottom: 5px; text-align: left; font-size: 0.9em;">
+                <i class="fas fa-exclamation-circle mr-2"></i> ${log.message}
+            </div>`;
+        });
+    }
+
+    if(hasViolations) {
+        flagsHtml = `<div style="text-align: left; margin-bottom: 10px;"><strong>Warning Flags Encountered:</strong></div>` + listItems;
     } else {
-        flagsHtml += `
+        flagsHtml = `
         <div style="background: rgba(34, 197, 94, 0.1); color: #22c55e; padding: 10px; border-radius: 5px; text-align: center; margin-bottom: 10px;">
             <i class="fas fa-shield-check mr-2"></i> No violations recorded. Perfect Integrity!
         </div>`;
