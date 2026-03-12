@@ -1,0 +1,49 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#050505;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D410AA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#dd00ff;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ff41;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#00cc33;stop-opacity:0.8" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer circle background -->
+  <circle cx="32" cy="32" r="30" fill="url(#bgGradient)" stroke="url(#primaryGradient)" stroke-width="2"/>
+  
+  <!-- Eye/Camera lens outer ring -->
+  <circle cx="32" cy="32" r="18" fill="none" stroke="url(#primaryGradient)" stroke-width="2" opacity="0.9"/>
+  
+  <!-- Camera lens inner -->
+  <circle cx="32" cy="32" r="14" fill="url(#primaryGradient)" opacity="0.3"/>
+  <circle cx="32" cy="32" r="10" fill="url(#bgGradient)"/>
+  
+  <!-- Eye iris/pupil -->
+  <circle cx="32" cy="32" r="6" fill="url(#primaryGradient)"/>
+  <circle cx="32" cy="32" r="3" fill="#ffffff"/>
+  
+  <!-- AI scanning lines -->
+  <path d="M 20 32 L 24 32" stroke="url(#accentGradient)" stroke-width="1.5" opacity="0.8"/>
+  <path d="M 40 32 L 44 32" stroke="url(#accentGradient)" stroke-width="1.5" opacity="0.8"/>
+  <path d="M 32 20 L 32 24" stroke="url(#accentGradient)" stroke-width="1.5" opacity="0.8"/>
+  <path d="M 32 40 L 32 44" stroke="url(#accentGradient)" stroke-width="1.5" opacity="0.8"/>
+  
+  <!-- Security shield elements (corner indicators) -->
+  <path d="M 12 12 L 16 12 L 16 16" stroke="url(#accentGradient)" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 48 12 L 52 12 L 52 16" stroke="url(#accentGradient)" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 12 52 L 16 52 L 16 48" stroke="url(#accentGradient)" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 48 52 L 52 52 L 52 48" stroke="url(#accentGradient)" stroke-width="2" fill="none" opacity="0.6"/>
+  
+  <!-- Small monitoring dots -->
+  <circle cx="18" cy="18" r="1.5" fill="url(#accentGradient)" opacity="0.7"/>
+  <circle cx="46" cy="18" r="1.5" fill="url(#accentGradient)" opacity="0.7"/>
+  <circle cx="18" cy="46" r="1.5" fill="url(#accentGradient)" opacity="0.7"/>
+  <circle cx="46" cy="46" r="1.5" fill="url(#accentGradient)" opacity="0.7"/>
+</svg>

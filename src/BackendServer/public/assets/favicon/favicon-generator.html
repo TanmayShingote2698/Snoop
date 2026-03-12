@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SNOOP Favicon Generator</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #050505; color: #e5e5e5; font-family: Arial, sans-serif; }
+        .container { text-align: center; }
+        canvas { border: 1px solid #D410AA; margin: 20px; }
+        .download-btn { background: linear-gradient(135deg, #D410AA, #dd00ff); color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px; }
+        .download-btn:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SNOOP Favicon Generator</h1>
+        <p>Right-click on the favicon below and save as PNG:</p>
+        <canvas id="favicon32" width="32" height="32"></canvas>
+        <canvas id="favicon64" width="64" height="64"></canvas>
+        <br>
+        <button class="download-btn" onclick="downloadFavicon(32)">Download 32x32</button>
+        <button class="download-btn" onclick="downloadFavicon(64)">Download 64x64</button>
+    </div>
+
+    <script>
+        function drawFavicon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const scale = size / 64;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Background circle
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.47, 0, 2 * Math.PI);
+            ctx.fillStyle = '#050505';
+            ctx.fill();
+            ctx.strokeStyle = '#D410AA';
+            ctx.lineWidth = 2 * scale;
+            ctx.stroke();
+            
+            // Eye/Camera lens outer ring
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.28, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#D410AA';
+            ctx.lineWidth = 2 * scale;
+            ctx.stroke();
+            
+            // Camera lens inner
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.22, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(212, 16, 170, 0.3)';
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.16, 0, 2 * Math.PI);
+            ctx.fillStyle = '#050505';
+            ctx.fill();
+            
+            // Eye iris/pupil
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.09, 0, 2 * Math.PI);
+            ctx.fillStyle = '#D410AA';
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.05, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            
+            // AI scanning lines
+            ctx.strokeStyle = 'rgba(0, 255, 65, 0.8)';
+            ctx.lineWidth = 1.5 * scale;
+            
+            // Horizontal lines
+            ctx.beginPath();
+            ctx.moveTo(size * 0.31, size/2);
+            ctx.lineTo(size * 0.38, size/2);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(size * 0.62, size/2);
+            ctx.lineTo(size * 0.69, size/2);
+            ctx.stroke();
+            
+            // Vertical lines
+            ctx.beginPath();
+            ctx.moveTo(size/2, size * 0.31);
+            ctx.lineTo(size/2, size * 0.38);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(size/2, size * 0.62);
+            ctx.lineTo(size/2, size * 0.69);
+            ctx.stroke();
+            
+            // Security shield corners
+            ctx.strokeStyle = 'rgba(0, 255, 65, 0.6)';
+            ctx.lineWidth = 2 * scale;
+            
+            // Top-left
+            ctx.beginPath();
+            ctx.moveTo(size * 0.19, size * 0.19);
+            ctx.lineTo(size * 0.25, size * 0.19);
+            ctx.lineTo(size * 0.25, size * 0.25);
+            ctx.stroke();
+            
+            // Top-right
+            ctx.beginPath();
+            ctx.moveTo(size * 0.75, size * 0.19);
+            ctx.lineTo(size * 0.81, size * 0.19);
+            ctx.lineTo(size * 0.81, size * 0.25);
+            ctx.stroke();
+            
+            // Bottom-left
+            ctx.beginPath();
+            ctx.moveTo(size * 0.19, size * 0.81);
+            ctx.lineTo(size * 0.25, size * 0.81);
+            ctx.lineTo(size * 0.25, size * 0.75);
+            ctx.stroke();
+            
+            // Bottom-right
+            ctx.beginPath();
+            ctx.moveTo(size * 0.75, size * 0.81);
+            ctx.lineTo(size * 0.81, size * 0.81);
+            ctx.lineTo(size * 0.81, size * 0.75);
+            ctx.stroke();
+            
+            // Monitoring dots
+            ctx.fillStyle = 'rgba(0, 255, 65, 0.7)';
+            const dotSize = 1.5 * scale;
+            
+            ctx.beginPath();
+            ctx.arc(size * 0.28, size * 0.28, dotSize, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(size * 0.72, size * 0.28, dotSize, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(size * 0.28, size * 0.72, dotSize, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(size * 0.72, size * 0.72, dotSize, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        function downloadFavicon(size) {
+            const canvas = document.getElementById('favicon' + size);
+            const link = document.createElement('a');
+            link.download = `favicon-${size}x${size}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Generate favicons on load
+        window.onload = function() {
+            drawFavicon(document.getElementById('favicon32'), 32);
+            drawFavicon(document.getElementById('favicon64'), 64);
+        };
+    </script>
+</body>
+</html>
