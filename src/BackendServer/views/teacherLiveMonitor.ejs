@@ -224,11 +224,26 @@
         let message = `${data.studentEmail} triggered a generic warning.`;
         
         if (data.activityType === 'TAB_SWITCH') {
+            title = "Tab Switch Duration";
+            message = `<strong class="text-danger">${data.studentEmail}</strong> was away from the test tab for ${data.details.durationSeconds.toFixed(1)}s.`;
+        } else if (data.activityType === 'TAB_SWITCH_INSTANT') {
             title = "Tab Switch Detected";
-            message = `<strong class="text-danger">${data.studentEmail}</strong> switched away from the test tab for ${data.details.durationSeconds.toFixed(1)}s.`;
+            message = `<strong class="text-danger">${data.studentEmail}</strong> has just switched tabs or minimized the browser!`;
         } else if (data.activityType === 'FULLSCREEN_EXIT') {
-            title = "Fullscreen Exit Detected";
-            message = `<strong class="text-danger">${data.studentEmail}</strong> exited fullscreen mode for ${data.details.durationSeconds.toFixed(1)}s.`;
+            title = "Fullscreen Penalty Duration";
+            message = `<strong class="text-danger">${data.studentEmail}</strong> returned to fullscreen after ${data.details.durationSeconds.toFixed(1)}s.`;
+        } else if (data.activityType === 'FULLSCREEN_EXIT_INSTANT') {
+            title = "Fullscreen Exited";
+            message = `<strong class="text-danger">${data.studentEmail}</strong> has just exited fullscreen mode!`;
+        } else if (data.activityType === 'WINDOW_BLUR') {
+            title = "Window Focus Lost";
+            message = `<strong class="text-danger">${data.studentEmail}</strong> clicked outside the test window or opened an overlay!`;
+        } else if (data.activityType === 'MOUSE_LEAVE') {
+            title = "Mouse Left Window";
+            message = `<strong class="text-danger">${data.studentEmail}</strong> moved their cursor outside the test area!`;
+        } else if (data.activityType === 'PROHIBITED_KEY') {
+            title = "Prohibited Key Pressed";
+            message = `<strong class="text-danger">${data.studentEmail}</strong> attempted to use a restricted key/shortcut: <b>${data.details.message}</b>`;
         }
 
         appendFeedItem('violation', title, message, data.timestamp);

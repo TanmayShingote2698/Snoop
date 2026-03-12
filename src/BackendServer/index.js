@@ -135,6 +135,14 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle student joining (to instantly populate rosters)
+  socket.on('student_joined', (data) => {
+    const { testID } = data;
+    if (testID) {
+      io.to(testID).emit('student_joined', data);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('❌ A user disconnected:', socket.id);
   });
