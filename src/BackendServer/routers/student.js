@@ -42,6 +42,45 @@ let studentCred = [];
 // }
 let resultArr = [];
 
+/**
+ * Robust utility to find a test across memory and database.
+ * Handles string/number ID mismatches and auto-resyncs if not found.
+ */
+async function getTestById(testID) {
+    const teacherModule = require("./teacher");
+    const liveTests = teacherModule.tests;
+    
+    const findInMemory = (id) => {
+        return liveTests.find(t => {
+            const details = t.test_details || t;
+            return String(details.id).trim() === String(id).trim();
+        });
+    };
+
+    let test = findInMemory(testID);
+    if (test) return test.test_details || test;
+
+    console.log(`[getTestById] Test ${testID} not in memory. Syncing with DB...`);
+    
+    return new Promise((resolve) => {
+        const options = {
+            url: 'http://127.0.0.1:100/getAllTest',
+            json: true
+        };
+        request.post(options, (err, resp, body) => {
+            if (!err && body && Array.isArray(body)) {
+                liveTests.length = 0;
+                body.forEach(t => liveTests.push(t.test_details || t));
+                const found = findInMemory(testID);
+                resolve(found ? (found.test_details || found) : null);
+            } else {
+                console.error("[getTestById] DB Sync Failed:", err);
+                resolve(null);
+            }
+        });
+    });
+}
+
 router.get("/login", checkNotAuthenticated, (req, res) => {
   res.render("studentLogin");
   // res.sendFile(`${publicDirPath}/studentLogin.html`);
@@ -437,61 +476,45 @@ router.post("/takeTest", checkAuthenticated, (req, res) => {
     // NEW FLOW: Render Instructions First
     res.render("testInstructions", {
       test,
-      email: req.body.email,
-      hideHome: true
+      email: req.body.email || req.session.user.email,
+      hideHome: true,
+      isolateTest: true
     });
 });
 
 // NEW ROUTE: System Check (Called from Instructions page)
-router.post("/systemCheck", checkAuthenticated, (req, res) => {
-  const teacherModule = require("./teacher");
-  const liveTests = teacherModule.tests;
+router.post("/systemCheck", checkAuthenticated, async (req, res) => {
   const testID = req.body.testID;
-
-  // Verify Test Exists again (Security)
-  let test = null;
-  for (let i = 0; i < liveTests.length; i++) {
-    let currentTest = liveTests[i].test_details || liveTests[i];
-    if (currentTest.id === testID) {
-      test = currentTest;
-      break;
-    }
-  }
+  const test = await getTestById(testID);
 
   if (!test) {
+    console.error(`[/systemCheck] Test ${testID} not found even after sync.`);
     return res.redirect("/student/home?error=" + encodeURIComponent("Session expired or Test not found."));
   }
 
   res.render("systemCheck", {
     test,
-    email: req.body.email,
-    hideHome: true
+    email: req.body.email || req.session.user.email,
+    hideHome: true,
+    isolateTest: true
   });
 });
 
-// Start Exam Route (Called from Instructions page)
-router.post("/startExam", checkAuthenticated, (req, res) => {
-  const teacherModule = require("./teacher");
-  const liveTests = teacherModule.tests;
+// Start Exam Route (Called from System Check page)
+router.post("/startExam", checkAuthenticated, async (req, res) => {
   const testID = req.body.testID;
-
-  let test = null;
-  for (let i = 0; i < liveTests.length; i++) {
-    let currentTest = liveTests[i].test_details || liveTests[i];
-    if (currentTest.id === testID) {
-      test = currentTest;
-      break;
-    }
-  }
+  const test = await getTestById(testID);
 
   if (!test) {
+    console.error(`[/startExam] Test ${testID} not found even after sync.`);
     return res.redirect("/student/home?error=" + encodeURIComponent("Session expired or Test not found."));
   }
 
   res.render("takeTestByStudent", {
     test,
-    email: req.body.email,
-    hideHome: true
+    email: req.body.email || req.session.user.email,
+    hideHome: true,
+    isolateTest: true
   });
 });
 
@@ -539,7 +562,21 @@ router.post('/submitTest', (req, res) => {
   }
   responseOfStudent.qna = qna;
 
-  let integrityScore = 100; // Default
+  // Calculate Dynamic Integrity Score
+  const tabViolations = req.body.tabSwitchData ? JSON.parse(req.body.tabSwitchData) : [];
+  const fsViolations = req.body.fullscreenData ? JSON.parse(req.body.fullscreenData) : [];
+  const instantViolations = req.body.actionLogs ? JSON.parse(req.body.actionLogs) : [];
+  
+  let integrityScore = 100;
+  
+  // Deduct 10 points per tab switch
+  integrityScore -= (tabViolations.length * 10); 
+  // Deduct 15 points per fullscreen exit (harsher penalty)
+  integrityScore -= (fsViolations.length * 15); 
+  // Deduct 5 points per restricted key strike or mouse exit
+  integrityScore -= (instantViolations.length * 5);
+  
+  if (integrityScore < 0) integrityScore = 0;
 
   const options = {
     url: 'http://127.0.0.1:200/' + 'scoreAndStore',
@@ -549,8 +586,10 @@ router.post('/submitTest', (req, res) => {
           "testID": responseOfStudent.testID,
           "studentEmail": responseOfStudent.studentEmail,
           "qna": responseOfStudent.qna,
-          "integrity": integrityScore, // Pass real score
-          "tabSwitchData": req.body.tabSwitchData ? JSON.parse(req.body.tabSwitchData) : [] // Parse hidden input
+          "integrity": integrityScore, 
+          "tabSwitchData": tabViolations,
+          "fullscreenData": fsViolations,
+          "actionLogs": instantViolations
         }
       }
     };
