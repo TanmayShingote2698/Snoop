@@ -2,14 +2,20 @@
   <input type="number" style="display: none;" value="<%= test.testDuration %>" name="testDuration" id="testDuration">
   
   <div class="exam-header d-flex justify-content-between align-items-center mb-5 p-4 glass-card"
-    style="position: relative; z-index: 100;">
-    <div>
-      <h4 class="font-weight-bold mb-0">Examination: <span style="color: var(--primary);">
-          <%= test.id %>
-        </span></h4>
-      <div class="d-flex align-items-center mt-1">
-        <p class="text-dim mb-0 small mr-3">Student: <%= email %>
-        </p>
+    style="position: relative; z-index: 1000; border-bottom: 2px solid var(--primary);">
+    <div class="d-flex align-items-center">
+      <div class="mr-4 text-center" style="border-right: 2px solid var(--glass-border); padding-right: 20px;">
+        <h2 class="navbar-brand-snoop mb-0" style="font-size: 2rem;">SNOOP</h2>
+        <p class="text-dim mb-0 small font-weight-bold" style="letter-spacing: 1px;">PROCTORING SYSTEM</p>
+      </div>
+      <div>
+        <h4 class="font-weight-bold mb-0 text-main">Examination: <span style="color: var(--primary);">
+            <%= test.id %>
+          </span></h4>
+        <div class="d-flex align-items-center mt-1">
+          <p class="text-dim mb-0 small">Student: <span class="text-main font-weight-bold"><%= email %></span>
+          </p>
+        </div>
       </div>
     </div>
     <style>
@@ -21,25 +27,82 @@
       }
 
       @keyframes pulse-red {
-        0% {
-          transform: scale(0.95);
-          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-        }
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+      }
 
-        70% {
-          transform: scale(1);
-          box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
-        }
+      .animate-pulse-pink {
+        animation: pulse-pink 2s infinite;
+      }
 
-        100% {
-          transform: scale(0.95);
-          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      @keyframes pulse-pink {
+        0% { transform: scale(0.98); opacity: 0.8; }
+        50% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0.98); opacity: 0.8; }
+      }
+
+      /* AI Monitor Status Bar */
+      .ai-monitor-status {
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        padding: 12px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        z-index: 1999;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
         }
       }
+
+      .status-active {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+      }
+
+      .status-warning {
+        background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+        color: white;
+      }
+
+      .status-processing {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+      }
+
+      .status-complete {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+      }
+
+      .status-error {
+        background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+        color: white;
+      }
+
+      .status-info {
+        background: linear-gradient(135deg, #64748b 0%, #1e293b 100%);
+        color: white;
+      }
     </style>
-    <div class="timer-box text-right">
-      <p class="text-dim mb-1 small">Time Remaining</p>
-      <h3 id="timer" class="font-weight-bold mb-0" style="color: #ef4444;"></h3>
+    <div class="timer-box text-right glass-card p-3 d-flex align-items-center" style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2);">
+      <div class="mr-3">
+        <p class="text-dim mb-0 small">Time Remaining</p>
+        <h3 id="timer" class="font-weight-bold mb-0" style="color: #ef4444; font-variant-numeric: tabular-nums;"></h3>
+      </div>
+      <i class="fas fa-clock fa-2x text-danger animate-pulse"></i>
     </div>
   </div>
 
@@ -49,6 +112,10 @@
     <input type="hidden" name="tabSwitchData" id="tabSwitchData" value="[]">
     <input type="hidden" name="fullscreenData" id="fullscreenData" value="[]">
     <input type="hidden" name="actionLogs" id="actionLogs" value="[]">
+    <!-- AI Monitoring Data -->
+    <input type="hidden" name="cheatScore" id="cheatScore" value="0">
+    <input type="hidden" name="anomalyData" id="anomalyData" value="[]">
+    <input type="hidden" name="monitoringStats" id="monitoringStats" value="{}">
 
     <style>
       .option-card {
@@ -65,9 +132,10 @@
       }
 
       .option-card.selected {
-        background: rgba(59, 130, 246, 0.1) !important;
-        border: 1px solid var(--primary);
-        box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        background: linear-gradient(135deg, rgba(212, 16, 170, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%) !important;
+        border: 1.5px solid var(--primary);
+        box-shadow: 0 0 15px rgba(212, 16, 170, 0.2);
+        transform: scale(1.01);
       }
 
       .option-badge {
@@ -212,6 +280,59 @@
     let awayStartTime = null;
     let fullscreenExitStartTime = null;
 
+    // --- AI MONITORING SETUP ---
+    let snoopMonitor = null;
+    let monitoringEnabled = false;
+    let monitoringAnomalies = [];
+
+    // Create AI Monitor Permission Overlay
+    const monitoringOverlay = document.createElement('div');
+    monitoringOverlay.id = 'monitoringOverlay';
+    monitoringOverlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(20,20,30,0.95), rgba(40,40,60,0.95)); z-index: 2001; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;';
+    monitoringOverlay.innerHTML = `
+        <div class="text-center glass-card p-5" style="max-width: 600px; border: 1px solid rgba(212, 16, 170, 0.3); background: rgba(255,255,255,0.05);">
+            <div class="mb-4">
+                <i class="fas fa-eye fa-4x mb-3 animate-pulse-pink" style="color: var(--primary);"></i>
+                <h2 class="font-weight-bold mb-1">AI Proctoring System</h2>
+                <p class="text-dim small text-uppercase font-weight-bold" style="letter-spacing: 2px;">Identity & Environment Verification</p>
+            </div>
+            <p class="text-dim mb-4">This exam utilizes advanced AI monitoring to maintain academic integrity. Please grant the necessary permissions to proceed.</p>
+            
+            <div class="row mb-4 text-left">
+                <div class="col-6 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-camera mr-2 text-primary"></i>
+                        <span class="small font-weight-bold">Gaze Tracking</span>
+                    </div>
+                </div>
+                <div class="col-6 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-microphone mr-2 text-primary"></i>
+                        <span class="small font-weight-bold">Audio Analysis</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user-shield mr-2 text-primary"></i>
+                        <span class="small font-weight-bold">Face Detection</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-mobile-alt mr-2 text-primary"></i>
+                        <span class="small font-weight-bold">Object Detection</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-snoop w-100 py-3 mb-3 justify-content-center" onclick="startAIMonitoring()">
+                <i class="fas fa-shield-alt mr-2"></i> Confirm & Start Monitoring
+            </button>
+            <p class="text-dim small mb-0">Permissions will only be active during the exam period.</p>
+        </div>
+    `;
+    document.body.appendChild(monitoringOverlay);
+
     // --- REAL-TIME MONITORING (Socket.IO) ---
     // Make sure socket.io is loaded before calling io()
     var socket = null;
@@ -306,10 +427,14 @@
     fullscreenOverlay.id = 'fullscreenOverlay';
     fullscreenOverlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;';
     fullscreenOverlay.innerHTML = `
-        <i class="fas fa-expand fa-4x mb-4 text-primary"></i>
-        <h2>Fullscreen Mode Required</h2>
-        <p class="text-dim mb-4">You must be in fullscreen mode to take this exam.</p>
-        <button class="btn-snoop px-5" onclick="enterFullscreen()">Enter Fullscreen & Start</button>
+        <div class="text-center glass-card p-5" style="max-width: 500px; border: 1px solid rgba(212, 16, 170, 0.3); background: rgba(0,0,0,0.8);">
+            <i class="fas fa-expand-arrows-alt fa-4x mb-4 animate-pulse-pink" style="color: var(--primary);"></i>
+            <h2 class="font-weight-bold mb-3">Environment Locked Required</h2>
+            <p class="text-dim mb-4">To prevent unauthorized external assistance, this exam must be viewed in full-screen mode.</p>
+            <button class="btn-snoop w-100 py-3" onclick="enterFullscreen()">
+                <i class="fas fa-expand mr-2"></i> Initialize Secure View
+            </button>
+        </div>
     `;
     document.body.appendChild(fullscreenOverlay);
 
@@ -479,21 +604,41 @@
             socket.emit('student_submitted', { testID: currentTestID, studentEmail: studentEmail });
         }
         isSubmitting = true;
+        
+        // Stop monitoring before submission
+        if (snoopMonitor && monitoringEnabled) {
+            collectMonitoringData();
+        }
     };
 
     // Ensure form submit also sets flag (covers creating programmatic submits)
     const originalSubmit = document.getElementById('testFormID').submit;
     document.getElementById('testFormID').submit = function() {
         isSubmitting = true;
+        // Stop monitoring
+        if (snoopMonitor && monitoringEnabled) {
+            collectMonitoringData();
+        }
         originalSubmit.apply(this);
     };
     
     // Also listen to the actual submit event
-    document.getElementById('testFormID').addEventListener('submit', function() {
+    document.getElementById('testFormID').addEventListener('submit', async function(e) {
+        if (isSubmitting) return;
         if (!isSubmitting && socket) {
             socket.emit('student_submitted', { testID: currentTestID, studentEmail: studentEmail });
         }
         isSubmitting = true;
+        
+        // Stop monitoring and collect data before submission
+        if (snoopMonitor && monitoringEnabled) {
+            e.preventDefault();
+            await collectMonitoringData();
+            // Resume with actual form submission
+            setTimeout(() => {
+                originalSubmit.apply(document.getElementById('testFormID'));
+            }, 500);
+        }
     });
 
     // Navigation Lockdown (Back Button Intercept)
@@ -633,4 +778,150 @@
     window.addEventListener('keydown', blockKeys, true); // true = capture phase
     window.addEventListener('keyup', blockKeys, true);
     window.addEventListener('keypress', blockKeys, true);
-  </script>
+
+    // --- AI MONITORING FUNCTIONS ---
+
+    async function startAIMonitoring() {
+        try {
+            document.getElementById('monitoringOverlay').style.display = 'none';
+            
+            // Initialize SnoopMonitor
+            snoopMonitor = new SnoopMonitor(
+                currentTestID,
+                studentEmail,
+                {
+                    frameInterval: 2000, // Capture every 2 seconds
+                    onAnomalyDetected: onMonitoringAnomaly,
+                    onStatusChange: updateMonitoringStatus,
+                    onError: handleMonitoringError
+                }
+            );
+
+            // Request permissions
+            await snoopMonitor.requestPermissions();
+            
+            // Start session
+            await snoopMonitor.startMonitoringSession();
+            
+            // Start continuous monitoring
+            snoopMonitor.startMonitoring();
+            monitoringEnabled = true;
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Monitoring Active',
+                text: 'AI proctoring has been activated. You will be analyzed for exam integrity.',
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } catch (error) {
+            console.error("AI Monitoring error:", error);
+            handleMonitoringError(error);
+        }
+    }
+
+    function skipAIMonitoring() {
+        document.getElementById('monitoringOverlay').style.display = 'none';
+        monitoringEnabled = false;
+        
+        Swal.fire({
+            icon: 'warning',
+            title: 'Monitoring Skipped',
+            text: 'You chose to proceed without AI monitoring. Your exam integrity score may be affected.',
+            confirmButtonColor: '#ef4444',
+            timer: 2500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+    });
+    }
+
+    function onMonitoringAnomaly(anomaly) {
+        monitoringAnomalies.push(anomaly);
+        console.log("[ANOMALY DETECTED]", anomaly);
+        
+        // Alert for critical anomalies
+        if (anomaly.type.includes('phone') || anomaly.type.includes('multiple_persons')) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Anomaly Detected!',
+                text: `${anomaly.type}: This has been recorded.`,
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        }
+    }
+
+    function updateMonitoringStatus(message, state) {
+        console.log(`[Monitoring Status] ${message} (${state})`);
+        // Display status in UI
+        let statusDiv = document.getElementById('ai-monitor-status');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'ai-monitor-status';
+            document.body.appendChild(statusDiv);
+        }
+        statusDiv.textContent = message;
+        statusDiv.className = `ai-monitor-status status-${state}`;
+    }
+
+    function handleMonitoringError(error) {
+        console.error("[Monitoring Error]", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Monitoring Error',
+            text: 'There was an issue with AI monitoring: ' + error.message,
+            confirmButtonColor: '#ef4444',
+        });
+    }
+
+    async function collectMonitoringData() {
+        if (!snoopMonitor || !monitoringEnabled) return;
+        
+        try {
+            updateMonitoringStatus("Finalizing monitoring data...", "processing");
+            
+            // Stop monitoring
+            const result = await snoopMonitor.stopMonitoring();
+            
+            // Collect statistics
+            const stats = snoopMonitor.getStats();
+            const cheatScore = snoopMonitor.getCheatScore();
+            
+            // Populate hidden form fields
+            document.getElementById('cheatScore').value = cheatScore;
+            document.getElementById('anomalyData').value = JSON.stringify(monitoringAnomalies);
+            document.getElementById('monitoringStats').value = JSON.stringify(stats);
+            
+            console.log("[Monitoring Summary]", {
+                cheatScore: cheatScore,
+                anomalies: monitoringAnomalies.length,
+                stats: stats
+            });
+            
+            // Cleanup
+            snoopMonitor.cleanupResources();
+            
+            return { cheatScore, stats };
+        } catch (error) {
+            console.error("Error collecting monitoring data:", error);
+        }
+    }
+
+    // Fade out monitoring overlay after fullscreen is entered
+    window.addEventListener('load', function() {
+        // Show monitoring overlay if fullscreen is already active
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            // User already in fullscreen, show monitoring request
+            setTimeout(() => {
+                if (document.getElementById('monitoringOverlay').style.display !== 'none') {
+                    // Still showing, let user interact with it
+                }
+            }, 500);
+        }
+    });
+  </script>

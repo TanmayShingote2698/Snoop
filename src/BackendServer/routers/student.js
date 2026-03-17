@@ -221,10 +221,10 @@ router.get("/home", checkAuthenticated, (req, res) => {
                     const d = matchDetails.test_details;
                     return {
                         ...r,
-                        start_date: d.start_date || 'N/A',
-                        start_time: d.start_time || 'N/A',
-                        end_date: d.end_date || 'N/A',
-                        end_time: d.end_time || 'N/A'
+                        // Fix: map startTime to start_date and endTime to end_date
+                        // The frontend studentHome.ejs expects these specific keys
+                        start_date: d.startTime ? new Date(d.startTime).toLocaleString() : 'N/A',
+                        end_date: d.endTime ? new Date(d.endTime).toLocaleString() : 'N/A'
                     };
                 }
                 return r;
@@ -562,7 +562,7 @@ router.post('/submitTest', (req, res) => {
   }
   responseOfStudent.qna = qna;
 
-  // Calculate Dynamic Integrity Score
+  // Calculate Dynamic Integrity Score (from behavioral monitoring)
   const tabViolations = req.body.tabSwitchData ? JSON.parse(req.body.tabSwitchData) : [];
   const fsViolations = req.body.fullscreenData ? JSON.parse(req.body.fullscreenData) : [];
   const instantViolations = req.body.actionLogs ? JSON.parse(req.body.actionLogs) : [];
@@ -578,6 +578,29 @@ router.post('/submitTest', (req, res) => {
   
   if (integrityScore < 0) integrityScore = 0;
 
+  // Parse AI Monitoring Data
+  let aiCheatScore = 0;
+  let anomalyData = [];
+  let monitoringStats = {};
+  
+  try {
+    aiCheatScore = parseFloat(req.body.cheatScore) || 0;
+    anomalyData = req.body.anomalyData ? JSON.parse(req.body.anomalyData) : [];
+    monitoringStats = req.body.monitoringStats ? JSON.parse(req.body.monitoringStats) : {};
+  } catch (e) {
+    console.error("Error parsing AI monitoring data:", e);
+  }
+
+  // Combine scores: Average of integrity (inverted) and AI cheat score
+  // IntegrityScore: 100 = good, 0 = bad
+  // CheatScore: 0 = good, 100 = bad
+  // Convert integrity to cheat scale and average
+  const invertedIntegrity = 100 - integrityScore;
+  const combinedCheatScore = Math.min((invertedIntegrity * 0.4 + aiCheatScore * 0.6), 100);
+
+  console.log(`[Submit Test] Student: ${responseOfStudent.studentEmail}, Test: ${testID}`);
+  console.log(`  Integrity: ${integrityScore}, AI Cheat: ${aiCheatScore}, Combined: ${combinedCheatScore}`);
+
   const options = {
     url: 'http://127.0.0.1:200/' + 'scoreAndStore',
       json: true,
@@ -586,7 +609,11 @@ router.post('/submitTest', (req, res) => {
           "testID": responseOfStudent.testID,
           "studentEmail": responseOfStudent.studentEmail,
           "qna": responseOfStudent.qna,
-          "integrity": integrityScore, 
+          "integrity": integrityScore,
+          "cheatScore": aiCheatScore,
+          "combinedCheatScore": combinedCheatScore,
+          "anomalyData": anomalyData,
+          "monitoringStats": monitoringStats,
           "tabSwitchData": tabViolations,
           "fullscreenData": fsViolations,
           "actionLogs": instantViolations
@@ -596,7 +623,8 @@ router.post('/submitTest', (req, res) => {
 
     request.post(options, (err, resp, body) => {
       if (err) {
-        return console.log(err);
+        console.error("Error storing test results:", err);
+        return res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&error=" + encodeURIComponent("Error submitting test. Please try again."));
       }
       res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&success=" + encodeURIComponent("Examination submitted successfully! Check your results below."));
     });

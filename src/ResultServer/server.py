@@ -2,11 +2,25 @@ from flask import Flask, request, jsonify, make_response
 from flask_restful import Resource, Api, reqparse
 import os
 from dotenv import load_dotenv
+import json
 
 env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 load_dotenv(dotenv_path=env_path)
 from dbManager import dbManager
 import random
+
+def calculate_risk_level(cheat_score):
+    """Convert cheat score to risk level"""
+    if cheat_score < 20:
+        return "LOW"
+    elif cheat_score < 40:
+        return "MODERATE"
+    elif cheat_score < 60:
+        return "MEDIUM"
+    elif cheat_score < 80:
+        return "HIGH"
+    else:
+        return "CRITICAL"
 
 app = Flask(__name__)
 api= Api(app)
@@ -30,7 +44,6 @@ class getStudentResult(Resource):
   
     def post(self):
         print("post was called")
-        headers: { "Accept": "application/json", "Content-type": "application/json",}
         found =getStudentResult.parser.parse_args()["studentEmail"]
         query = "SELECT * FROM result where email='" + found+"'"
         result = db.runQuery(str(query))
@@ -47,6 +60,11 @@ class getStudentResult(Resource):
                 'integrity':r['integrity'],
                 'subjective_score':r['subjective_score'],
                 'tab_switch_data': r.get('tab_switch_data', []),
+                'monitoring_enabled': r.get('monitoring_enabled', False),
+                'cheat_score': r.get('cheat_score', 0),
+                'combined_score': r.get('combined_score', 0),
+                'risk_level': r.get('risk_level', 'LOW'),
+                'anomaly_data': r.get('anomaly_data', []),
                 'created_at': r.get('created_at', None)
             }
             bigjson.append(jsondata)
@@ -62,9 +80,8 @@ class getTestResult(Resource):
     
     def post(self):
         print("post test was called")
-        headers: { "Accept": "application/json", "Content-type": "application/json",}
         found =getTestResult.parser.parse_args()["test_id"]
-        query = "SELECT * FROM result where test_id=" + found
+        query = f"SELECT * FROM result where test_id='{found}'"
         result = db.runQuery(str(query))
         bigjson = []
         for r in result :
@@ -78,7 +95,12 @@ class getTestResult(Resource):
                 'answers':r['answers'],
                 'integrity':r['integrity'],
                 'subjective_score':r['subjective_score'],
-                'tab_switch_data': r.get('tab_switch_data', [])
+                'tab_switch_data': r.get('tab_switch_data', []),
+                'monitoring_enabled': r.get('monitoring_enabled', False),
+                'cheat_score': r.get('cheat_score', 0),
+                'combined_score': r.get('combined_score', 0),
+                'risk_level': r.get('risk_level', 'LOW'),
+                'anomaly_data': r.get('anomaly_data', [])
             }
             bigjson.append(jsondata)
         
@@ -95,10 +117,9 @@ class getStudentResponse(Resource):
     
     def post(self):
         print("post student response was called")
-        headers: { "Accept": "application/json", "Content-type": "application/json",}
         s_email = getStudentResponse.parser.parse_args()["studentEmail"]
         t_id = getStudentResponse.parser.parse_args()["test_id"]
-        query = "SELECT * FROM result where test_id=" + t_id + " and email='" + s_email+"'"
+        query = f"SELECT * FROM result where test_id='{t_id}' and email='{s_email}'"
         result = db.runQuery(str(query))
         bigjson = []
         for r in result :
@@ -112,7 +133,12 @@ class getStudentResponse(Resource):
                 'answers':r['answers'],
                 'integrity':r['integrity'],
                 'subjective_score':r['subjective_score'],
-                'tab_switch_data': r.get('tab_switch_data', [])
+                'tab_switch_data': r.get('tab_switch_data', []),
+                'monitoring_enabled': r.get('monitoring_enabled', False),
+                'cheat_score': r.get('cheat_score', 0),
+                'combined_score': r.get('combined_score', 0),
+                'risk_level': r.get('risk_level', 'LOW'),
+                'anomaly_data': r.get('anomaly_data', [])
             }
             bigjson.append(jsondata)
     
@@ -128,20 +154,25 @@ class scoreAndStore(Resource):
     
     def post(self):
         print("score and store was called")
-        headers: { "Accept": "application/json", "Content-type": "application/json",}
         response = scoreAndStore.parser.parse_args()["response"]
         print(type(response))
-        t_id = str(response["testID"])
-        email = str(response["studentEmail"])
+        # Ensure test_id is properly treated as TEXT/string, not converted to number
+        t_id = str(response["testID"]).strip()  # Keep as string, remove whitespace
+        email = str(response["studentEmail"]).strip()
         print(f"Response:{response}")
         
         # Fetch actual student_id from database
         student_query = f"SELECT student_id FROM student WHERE email='{email}'"
         student_data = db.runQuery(student_query)
         if student_data and len(student_data) > 0:
-            s_id = student_data[0].get('student_id')
+            s_id_candidate = student_data[0].get('student_id')
+            try:
+                s_id = int(s_id_candidate)
+            except Exception as e:
+                print(f"Warning: student_id from DB is not integer: {s_id_candidate} ({e})")
+                s_id = None
         else:
-            s_id = 0 # Fallback
+            s_id = None # Fallback
             
         mcq_score = 0 # Initialize to 0, will be incremented
         final_score=mcq_score+random.randint(1,5)
@@ -152,6 +183,17 @@ class scoreAndStore(Resource):
         fullscreen_data = response.get("fullscreenData", []) # Extract fullscreen logs
         action_logs = response.get("actionLogs", []) # Extract granular logs
         subjective_score=random.randint(1,20)
+        
+        # Extract AI Monitoring Data
+        cheat_score = float(response.get("cheatScore", 0))
+        combined_score = float(response.get("combinedCheatScore", 0))
+        anomaly_data = response.get("anomalyData", [])
+        monitoring_stats = response.get("monitoringStats", {})
+        monitoring_enabled = monitoring_stats.get("framesCaptured", 0) > 0 if monitoring_stats else False
+        
+        # Calculate risk level
+        risk_level = calculate_risk_level(combined_score)
+        
         qna = response["qna"]
         print("=======================================")
         for q in qna:
@@ -159,36 +201,40 @@ class scoreAndStore(Resource):
             print(f"qActual:{q['actualAnswer']}")
             print(f"qStudent:{q['studentAnswer']}")
 
-
             if(q["actualAnswer"]!="This is a sbjective question"):
                 if(q["actualAnswer"]==q["studentAnswer"]):
                     mcq_score = mcq_score +1
             answers.append(q["studentAnswer"])
         print("================================================")
-        # print(qna)
-        # print(type(qna))
-        # print(mcq_score)
-        # print(answers)
         
         jsondata = {
-                'student_id': s_id,
-                'email':email,
-                'test_id': t_id,
-                'mcq_score':mcq_score,
-                'final_score':final_score,
-                'generated':generated,
-                'answers':answers,
-                'integrity':integrity,
+                'student_id': int(s_id) if s_id and s_id != 0 else None,  # Can be NULL
+                'email': email,
+                'test_id': str(t_id),  # Explicitly ensure TEXT type
+                'mcq_score': int(mcq_score),
+                'final_score': int(final_score),
+                'generated': bool(generated),
+                'answers': answers,
+                'integrity': int(integrity),
                 'tab_switch_data': tab_switch_data,
                 'fullscreen_data': fullscreen_data, 
-                'action_logs': action_logs, # Store in DB
-                'subjective_score':subjective_score
+                'action_logs': action_logs,
+                'subjective_score': int(subjective_score),
+                'monitoring_enabled': bool(monitoring_enabled),
+                'cheat_score': float(cheat_score),
+                'combined_score': float(combined_score),
+                'risk_level': str(risk_level),
+                'anomaly_data': anomaly_data if isinstance(anomaly_data, list) else [],
+                'monitoring_stats': monitoring_stats if isinstance(monitoring_stats, dict) else {}
             }
 
-        
-
-        result = db.insertEntry("result",jsondata)
+        print(f"DEBUG: Inserting into result with test_id='{jsondata['test_id']}' (type: {type(jsondata['test_id']).__name__})")
+        result = db.insertEntry("result", jsondata)
         print(result)
+        
+        print(f"[Suite] Test {t_id} - Student {email}")
+        print(f"  Integrity: {integrity}, Cheat Score: {cheat_score}, Combined: {combined_score}")
+        print(f"  Risk Level: {risk_level}, Monitoring: {monitoring_enabled}")
 
         # Update student's tests_given count
         try:
@@ -197,7 +243,6 @@ class scoreAndStore(Resource):
             if student_profile:
                 current_tests = student_profile[0].get('tests_given', {"TestAmt": 0})
                 if isinstance(current_tests, str):
-                    import json
                     current_tests = json.loads(current_tests)
                 
                 new_count = current_tests.get('TestAmt', 0) + 1

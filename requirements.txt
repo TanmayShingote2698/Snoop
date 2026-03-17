@@ -1,12 +1,19 @@
-click==7.1.2
-dlib==19.7.0
-face-recognition==1.3.0
-face-recognition-models==0.3.0
-imutils==0.5.3
-numpy==1.23
-opencv-contrib-python==4.4.0.44
-pandas==1.5
-Pillow==8.0.1
-python-dateutil==2.8.1
-pytz==2020.4
-six==1.15.0
+# ── Original dependencies (relaxed pins) ───────────────────
+click>=7.1.2
+imutils>=0.5.3
+numpy>=1.23,<2
+opencv-contrib-python>=4.5
+pandas>=1.5
+Pillow>=8.0.1
+python-dateutil>=2.8.1
+pytz>=2020.4
+six>=1.15.0
+
+# ── AI Monitoring dependencies ─────────────────────────────
+ultralytics
+facenet-pytorch
+mediapipe
+pyaudio
+librosa
+torch
+torchvision

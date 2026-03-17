@@ -713,7 +713,7 @@ router.post("/saveGeneratedTest", checkAuthenticated, (req, res) => {
         const questions = JSON.parse(req.body.questions);
         const testDuration = req.body.testDuration;
         const accessCode = Math.random().toString(36).substring(7).toUpperCase();
-        const startTime = new Date().getHours();
+         const startTime = new Date().getHours();
         const warningThreshold = 50;
 
         // Create test object

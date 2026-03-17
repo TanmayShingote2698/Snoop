@@ -22,20 +22,37 @@
                         <thead style="border-bottom: 2px solid var(--glass-border);">
                             <tr>
                                 <th scope="col" class="font-weight-bold text-dim pb-3">Student Email</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Final Score</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">MCQ + Subj</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Integrity %</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Tab Switches</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Time Exited (sec)</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">FS Exits</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Score</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Integrity</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">AI Cheat Score</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Combined</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Risk Level</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Monitoring</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Details</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <% results.forEach(function(r) { %>
+                            <% results.forEach(function(r, idx) { %>
                                 <% 
                                     let integrityColor = '#34d399'; // Green
                                     if (r.integrity < 50) integrityColor = '#ef4444'; // Red
                                     else if (r.integrity < 80) integrityColor = '#fbbf24'; // Yellow
+                                    
+                                    let riskColor = '#34d399'; // LOW - Green
+                                    let riskBg = 'rgba(52, 211, 153, 0.1)';
+                                    if (r.risk_level === 'MODERATE') {
+                                        riskColor = '#60a5fa'; // Blue
+                                        riskBg = 'rgba(96, 165, 250, 0.1)';
+                                    } else if (r.risk_level === 'MEDIUM') {
+                                        riskColor = '#fbbf24'; // Yellow
+                                        riskBg = 'rgba(251, 191, 36, 0.1)';
+                                    } else if (r.risk_level === 'HIGH') {
+                                        riskColor = '#f97316'; // Orange
+                                        riskBg = 'rgba(249, 115, 22, 0.1)';
+                                    } else if (r.risk_level === 'CRITICAL') {
+                                        riskColor = '#ef4444'; // Red
+                                        riskBg = 'rgba(239, 68, 68, 0.1)';
+                                    }
                                 %>
                                 <tr class="snoop-table-row" style="border-bottom: 1px solid var(--glass-border); transition: background 0.3s; cursor: default;">
                                     <td class="align-middle py-3">
@@ -52,36 +69,90 @@
                                     <td class="align-middle text-center py-3">
                                         <span class="fs-5 font-weight-bold" style="color: var(--secondary);"><%= r.final_score %></span>
                                     </td>
-                                    <td class="align-middle text-center py-3 text-dim">
-                                        <span class="badge badge-dark border" style="border-color: var(--glass-border) !important; background: rgba(255,255,255,0.05);">
-                                            <%= r.mcq_score %> + <%= r.subjective_score %>
-                                        </span>
-                                    </td>
                                     <td class="align-middle text-center py-3">
-                                        <span class="badge badge-pill px-3 py-2" style="background: <%= integrityColor %>33; color: <%= integrityColor %>; border: 1px solid <%= integrityColor %>44; font-size: 0.9rem;">
+                                        <span class="badge badge-pill px-3 py-2" style="background: <%= integrityColor %>33; color: <%= integrityColor %>; border: 1px solid <%= integrityColor %>44; font-size: 0.85rem;">
                                             <%= r.integrity %>%
                                         </span>
                                     </td>
                                     <td class="align-middle text-center py-3">
-                                        <% if (r.tabSwitchCount > 0) { %>
-                                            <span class="text-warning font-weight-bold"><%= r.tabSwitchCount %></span>
+                                        <% if (r.monitoring_enabled) { %>
+                                            <span class="badge badge-pill px-3 py-2" style="background: <%= (r.cheat_score > 60 ? '#ef4444' : r.cheat_score > 40 ? '#fbbf24' : '#34d399') %>33; color: <%= (r.cheat_score > 60 ? '#ef4444' : r.cheat_score > 40 ? '#fbbf24' : '#34d399') %>; border: 1px solid <%= (r.cheat_score > 60 ? '#ef4444' : r.cheat_score > 40 ? '#fbbf24' : '#34d399') %>44; font-size: 0.85rem;">
+                                                <%= r.cheat_score.toFixed(1) %>
+                                            </span>
                                         <% } else { %>
-                                            <span class="text-dim">0</span>
+                                            <span class="text-dim text-center" style="font-size: 0.9rem;">N/A</span>
                                         <% } %>
                                     </td>
                                     <td class="align-middle text-center py-3">
-                                        <% if (r.totalTimeExited > 0) { %>
-                                            <span class="text-danger font-weight-bold"><%= r.totalTimeExited %>s</span>
+                                        <% if (r.monitoring_enabled) { %>
+                                            <span class="badge badge-pill px-3 py-2" style="background: <%= riskBg %>; color: <%= riskColor %>; border: 1px solid <%= riskColor %>44; font-size: 0.85rem; font-weight: bold;">
+                                                <%= r.combined_score.toFixed(1) %>
+                                            </span>
                                         <% } else { %>
-                                            <span class="text-dim">0s</span>
+                                            <span class="text-dim text-center" style="font-size: 0.9rem;">N/A</span>
                                         <% } %>
                                     </td>
                                     <td class="align-middle text-center py-3">
-                                        <% if (r.fullscreenExits > 0) { %>
-                                            <span class="text-warning font-weight-bold"><%= r.fullscreenExits %></span>
+                                        <% if (r.monitoring_enabled) { %>
+                                            <span class="badge px-3 py-2" style="background: <%= riskBg %>; color: <%= riskColor %>; border: 1px solid <%= riskColor %>44; font-weight: bold; font-size: 0.85rem;">
+                                                <% 
+                                                    let riskIcon = '🟢';
+                                                    if (r.risk_level === 'MODERATE') riskIcon = '🔵';
+                                                    else if (r.risk_level === 'MEDIUM') riskIcon = '🟡';
+                                                    else if (r.risk_level === 'HIGH') riskIcon = '🟠';
+                                                    else if (r.risk_level === 'CRITICAL') riskIcon = '🔴';
+                                                %>
+                                                <%= riskIcon %> <%= r.risk_level %>
+                                            </span>
                                         <% } else { %>
-                                            <span class="text-dim">0</span>
+                                            <span class="text-dim text-center" style="font-size: 0.9rem;">N/A</span>
                                         <% } %>
+                                    </td>
+                                    <td class="align-middle text-center py-3">
+                                        <% if (r.monitoring_enabled) { %>
+                                            <span class="badge badge-success px-2 py-1" style="font-size: 0.8rem;">
+                                                <i class="fas fa-camera mr-1"></i>Active
+                                            </span>
+                                        <% } else { %>
+                                            <span class="badge badge-secondary px-2 py-1" style="font-size: 0.8rem;">
+                                                <i class="fas fa-ban mr-1"></i>Inactive
+                                            </span>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle text-center py-3">
+                                        <% if (r.monitoring_enabled && r.anomaly_data && r.anomaly_data.length > 0) { %>
+                                            <button class="btn btn-sm btn-outline-info" onclick="toggleAnomalyDetails(<%= idx %>)" style="border-color: var(--primary); color: var(--primary);">
+                                                <i class="fas fa-eye mr-1"></i><%= r.anomaly_data.length %> Anomalies
+                                            </button>
+                                        <% } else { %>
+                                            <span class="text-dim" style="font-size: 0.9rem;">—</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                                <!-- Anomaly Details Row -->
+                                <tr id="details-<%= idx %>" style="display: none; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--glass-border);">
+                                    <td colspan="8" class="py-3">
+                                        <div class="ml-3">
+                                            <h6 class="font-weight-bold mb-3" style="color: var(--primary);">Detected Anomalies</h6>
+                                            <% if (r.anomaly_data && r.anomaly_data.length > 0) { %>
+                                                <div class="row">
+                                                    <% r.anomaly_data.slice(0, 5).forEach(function(anom, aidx) { %>
+                                                        <div class="col-md-6 col-lg-4 mb-2">
+                                                            <div class="glass-card p-2" style="border: 1px solid var(--glass-border); border-radius: 6px;">
+                                                                <small class="text-dim">
+                                                                    <strong><%= anom.type.replace(/_/g, ' ').toUpperCase() %></strong><br>
+                                                                    Confidence: <%= (anom.confidence * 100).toFixed(0) %>%<br>
+                                                                    Time: <%= new Date(anom.timestamp).toLocaleTimeString() %>
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    <% }) %>
+                                                </div>
+                                                <% if (r.anomaly_data.length > 5) { %>
+                                                    <p class="text-dim small mt-2">... and <%= r.anomaly_data.length - 5 %> more anomalies</p>
+                                                <% } %>
+                                            <% } %>
+                                        </div>
                                     </td>
                                 </tr>
                             <% }) %>
@@ -98,6 +169,19 @@
         </div>
     </div>
 </div>
+
+<script>
+    function toggleAnomalyDetails(idx) {
+        const detailsRow = document.getElementById('details-' + idx);
+        if (detailsRow) {
+            if (detailsRow.style.display === 'none') {
+                detailsRow.style.display = 'table-row';
+            } else {
+                detailsRow.style.display = 'none';
+            }
+        }
+    }
+</script>
 
 <style>
     .snoop-table-row:hover {

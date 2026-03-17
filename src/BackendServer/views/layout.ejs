@@ -561,9 +561,6 @@
             <a href="/teacher/showAllTests?filter=completed" class="list-group-item list-group-item-action bg-transparent second-text fw-bold <%= (locals.currentPage === 'results') ? 'active' : '' %>">
                 <i class="fas fa-chart-line mr-4"></i> <span class="sidebar-text">Results</span>
             </a>
-            <a href="/teacher/students" class="list-group-item list-group-item-action bg-transparent second-text fw-bold <%= (locals.currentPage === 'students') ? 'active' : '' %>">
-                <i class="fas fa-users mr-4"></i> <span class="sidebar-text">Students</span>
-            </a>
         </div>
 
         <!-- Sticky Bottom Section -->
@@ -876,6 +873,9 @@
 
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Snoop AI Monitor -->
+  <script src="/js/SnoopMonitor.js"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {

@@ -84,6 +84,73 @@ app.use("/teacher", require("./routers/teacher").router);
 // Student Router
 app.use("/student", require("./routers/student"));
 
+// AI Monitoring Proxy Routes - Forward to AIMonitor service
+const request = require('request');
+const AIMONITOR_PORT = process.env.AIMONITOR_PORT || 5001; // AIMonitor runs on port 5001
+
+// Proxy: Monitoring Status
+app.get('/api/monitoring', (req, res) => {
+  const options = {
+    url: `http://127.0.0.1:${AIMONITOR_PORT}/api/monitoring`,
+    json: true
+  };
+  request.get(options, (error, response, body) => {
+    if (error) {
+      console.error('Monitoring status error:', error);
+      return res.status(502).json({ error: 'AI Monitoring service unreachable' });
+    }
+    res.json(body);
+  });
+});
+
+// Proxy: Start Monitoring Session
+app.post('/api/monitoring/start_session', (req, res) => {
+  const options = {
+    url: `http://127.0.0.1:${AIMONITOR_PORT}/api/monitoring/start_session`,
+    json: true,
+    body: req.body
+  };
+  request.post(options, (error, response, body) => {
+    if (error) {
+      console.error('Monitoring start_session error:', error);
+      return res.status(500).json({ error: 'Failed to start monitoring session' });
+    }
+    res.json(body);
+  });
+});
+
+// Proxy: Analyze Frame
+app.post('/api/monitoring/analyze_frame', (req, res) => {
+  const options = {
+    url: `http://127.0.0.1:${AIMONITOR_PORT}/api/monitoring/analyze_frame`,
+    json: true,
+    body: req.body
+  };
+  request.post(options, (error, response, body) => {
+    if (error) {
+      console.error('Monitoring analyze_frame error:', error);
+      return res.status(500).json({ error: 'Failed to analyze frame', anomalies: [] });
+    }
+    res.json(body);
+  });
+});
+
+// Proxy: End Session
+app.post('/api/monitoring/end_session', (req, res) => {
+  const options = {
+    url: `http://127.0.0.1:${AIMONITOR_PORT}/api/monitoring/end_session`,
+    json: true,
+    body: req.body
+  };
+  request.post(options, (error, response, body) => {
+    if (error) {
+      console.error('Monitoring end_session error:', error);
+      return res.status(500).json({ error: 'Failed to end monitoring session', cheat_score: 0 });
+    }
+    res.json(body);
+  });
+});
+
 // Set static folder
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

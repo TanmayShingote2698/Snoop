@@ -44,6 +44,13 @@ CREATE TABLE IF NOT EXISTS public.result (
     fullscreen_data JSONB DEFAULT '[]'::jsonb,
     action_logs JSONB DEFAULT '[]'::jsonb,
     subjective_score INT DEFAULT 0,
+    -- AI Monitor Fields
+    monitoring_enabled BOOLEAN DEFAULT FALSE,
+    cheat_score DECIMAL(5,2) DEFAULT 0,
+    combined_score DECIMAL(5,2) DEFAULT 0,
+    risk_level TEXT DEFAULT 'LOW',
+    anomaly_data JSONB DEFAULT '[]'::jsonb,
+    monitoring_stats JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

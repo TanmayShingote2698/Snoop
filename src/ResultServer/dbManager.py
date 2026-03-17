@@ -34,12 +34,19 @@ class dbManager:
             if 'id' in jsonObj and jsonObj['id'] == 0:
                 del jsonObj['id']
             
+            # Log the data being inserted for debugging
+            print(f"[DBManager] Inserting into {table}:")
+            for key, value in jsonObj.items():
+                if key not in ['answers', 'tab_switch_data', 'action_logs', 'anomaly_data', 'monitoring_stats']:  # Skip large fields
+                    print(f"  {key}: {value} (type: {type(value).__name__})")
+            
             result = self.client.table(table).insert(jsonObj).execute()
             print(f"Inserted into {table}: {jsonObj.get('email', 'record')}")
             return result
             
         except Exception as e:
             print(f"Error inserting into {table}: {e}")
+            print(f"Data attempted to insert: {jsonObj}")
             return None
 
     def getEntry(self, table, jsonKey):
