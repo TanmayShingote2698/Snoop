@@ -21,7 +21,7 @@
         <% } %>
 
         <div class="glass-card mb-4">
-            <form action="/<%= locals.user.role %>/profile" method="POST" enctype="multipart/form-data">
+            <form id="profileForm" action="/<%= locals.user.role %>/profile" method="POST" enctype="multipart/form-data">
                 
                 <div class="text-center mb-4">
                     <div class="position-relative d-inline-block">
@@ -32,6 +32,14 @@
                         <input type="file" id="photo" name="photo" class="d-none" accept="image/*" onchange="previewImage(this)">
                     </div>
                     <p class="text-dim mt-2 small">Click icon to change photo</p>
+                    
+                    <!-- Progress Bar Container -->
+                    <div id="uploadProgressContainer" class="mt-3 d-none" style="max-width: 200px; margin: 0 auto;">
+                        <div class="progress" style="height: 8px; border-radius: 4px; background: rgba(0,0,0,0.1);">
+                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small id="uploadStatusText" class="text-primary mt-1 d-block" style="font-size: 0.7rem;">Uploading... 0%</small>
+                    </div>
                 </div>
 
                 <div class="form-group mb-4">
@@ -60,7 +68,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end mt-4">
-                    <button type="submit" class="btn-snoop rounded-pill px-5">
+                    <button type="submit" id="saveBtn" class="btn-snoop rounded-pill px-5">
                         <i class="fas fa-save"></i> Save Changes
                     </button>
                 </div>
@@ -80,16 +88,77 @@
         }
     }
 
-    // Auto-hide alerts after 5 seconds
-    setTimeout(function() {
-        var alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
-            var bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        });
-    }, 5000);
-    
-    // Check URL params for success/error if sent via redirect
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const formData = new FormData(form);
+        const xhr = new XMLHttpRequest();
+        const saveBtn = document.getElementById('saveBtn');
+        const progressContainer = document.getElementById('uploadProgressContainer');
+        const progressBar = document.getElementById('uploadProgressBar');
+        const statusText = document.getElementById('uploadStatusText');
+        
+        // Initial state
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+        progressContainer.classList.remove('d-none');
+        
+        xhr.open('POST', form.action, true);
+        
+        // Track Progress
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const percentComplete = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percentComplete + '%';
+                progressBar.setAttribute('aria-valuenow', percentComplete);
+                statusText.innerText = `Uploading... ${percentComplete}%`;
+                
+                if(percentComplete === 100) {
+                    statusText.innerText = 'Finishing up...';
+                }
+            }
+        };
+        
+        xhr.onload = function() {
+            if (xhr.status === 200 || xhr.status === 302) {
+                // Success - Since it's a redirect, we might need to check if we can follow or just refresh
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Profile Updated!',
+                    text: 'Your profile has been saved successfully.',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Update Failed',
+                    text: 'There was an error updating your profile. Please try again.'
+                });
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                progressContainer.classList.add('d-none');
+            }
+        };
+        
+        xhr.onerror = function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Connection Error',
+                text: 'Could not connect to the server.'
+            });
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            progressContainer.classList.add('d-none');
+        };
+        
+        xhr.send(formData);
+    });
+
+    // Check URL params for success/error if sent via traditional redirect (fallback)
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const errorMsg = urlParams.get('error');
@@ -104,7 +173,6 @@
             showConfirmButton: false,
             timer: 3000
         });
-        // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     

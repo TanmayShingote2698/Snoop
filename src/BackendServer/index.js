@@ -131,6 +131,32 @@ app.post('/api/monitoring/analyze_frame', (req, res) => {
       console.error('Monitoring analyze_frame error:', error);
       return res.status(500).json({ error: 'Failed to analyze frame', anomalies: [] });
     }
+
+    // BROADCAST AI ANOMALIES TO TEACHER
+    if (body && body.anomalies && body.anomalies.length > 0) {
+      const io = app.get('io');
+      const { session_id } = req.body;
+      
+      // Parse student info from session_id (format: testId-studentEmail-timestamp)
+      const parts = session_id.split('-');
+      if (parts.length >= 2) {
+        const testID = parts[0];
+        const studentEmail = parts[1];
+
+        body.anomalies.forEach(anomaly => {
+          io.to(testID).emit('live_activity_update', {
+            testID,
+            studentEmail,
+            activityType: 'AI_DETECTION',
+            anomalyType: anomaly.type,
+            confidence: anomaly.confidence,
+            timestamp: anomaly.timestamp || new Date().toISOString(),
+            details: { message: `AI Detected: ${anomaly.type.replace(/_/g, ' ')}` }
+          });
+        });
+      }
+    }
+
     res.json(body);
   });
 });

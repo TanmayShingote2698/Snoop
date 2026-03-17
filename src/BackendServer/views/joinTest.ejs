@@ -1,0 +1,33 @@
+<div class="row justify-content-center" style="margin-top: 5px;">
+  <div class="col-md-6">
+    <div class="glass-card">
+      <div class="text-center mb-4">
+        <i class="fas fa-sign-in-alt fa-3x mb-3" style="color: var(--primary);"></i>
+        <h2 class="font-weight-bold">Join Examination</h2>
+        <p class="text-dim">You are joining test: <strong style="color: var(--primary);"><%= testID %></strong></p>
+      </div>
+
+      <form action="/student/takeTest" method="POST">
+        <input type="hidden" name="testID" value="<%= testID %>">
+        <input type="hidden" name="email" value="<%= email %>">
+        
+        <div class="form-group mb-4">
+          <label><i class="fas fa-key mr-2"></i>Access Code</label>
+          <input name="accessCode" type="password" class="form-control" placeholder="Enter the access code provided" required autofocus
+                 style="background: rgba(0,0,0,0.2) !important; color: var(--text-main) !important; font-size: 1.2rem; text-align: center; letter-spacing: 2px;">
+          <small class="form-text text-muted">This code was sent to you in the invitation email.</small>
+        </div>
+
+        <button type="submit" class="btn-snoop w-100 justify-content-center">
+          Unlock & Start Examination <i class="fas fa-unlock ml-2"></i>
+        </button>
+      </form>
+
+      <div class="text-center mt-4 border-top pt-3">
+          <a href="/student/home" class="text-dim small">
+              <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+          </a>
+      </div>
+    </div>
+  </div>
+</div>
