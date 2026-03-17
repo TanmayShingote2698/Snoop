@@ -24,11 +24,12 @@
             100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
         .feed-container {
-            max-height: 500px;
+            max-height: 600px;
             overflow-y: auto;
+            padding-right: 5px;
         }
         .feed-container::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
         .feed-container::-webkit-scrollbar-thumb {
             background-color: var(--primary);
@@ -45,7 +46,6 @@
         }
         .feed-item:hover {
             background: rgba(255, 255, 255, 0.07);
-            transform: translateX(5px);
         }
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -54,15 +54,54 @@
         .feed-item.join { border-left-color: #3b82f6; }
         .feed-item.submit { border-left-color: #10b981; }
         .feed-item.violation { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+        .feed-item.ai-alert { border-left-color: #ec4899; background: rgba(236, 72, 153, 0.08); }
         
-        .student-item {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--glass-border);
+        /* Student Card Styles */
+        .student-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
         }
-        .student-item:last-child {
-            border-bottom: none;
+        .student-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .student-card.active-focus {
+            border: 2px solid var(--primary);
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-safe { background: #10b981; box-shadow: 0 0 8px #10b981; }
+        .status-warning { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+        .status-critical { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        
+        .card-stat {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+        .card-btn {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: bold;
         }
     </style>
 
@@ -70,9 +109,15 @@
         <!-- Live Activity Feed -->
         <div class="col-lg-8 mb-4">
             <div class="glass-card d-flex flex-column h-100">
-                <h5 class="font-weight-bold mb-4 border-bottom pb-2" style="border-color: var(--glass-border) !important;">
-                    <i class="fas fa-stream mr-2 text-primary"></i> Live Activity Feed
-                </h5>
+                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3" style="border-color: var(--glass-border) !important;">
+                    <h5 class="font-weight-bold mb-0">
+                        <i class="fas fa-stream mr-2 text-primary"></i> <span id="feedTitle">Combined Activity Feed</span>
+                    </h5>
+                    <button class="btn btn-sm btn-snoop-outline py-1 px-3" id="resetFeedBtn" style="display: none;" onclick="focusStudent(null)">
+                        <i class="fas fa-sync-alt mr-1"></i> Show Combined
+                    </button>
+                </div>
+                
                 <div class="feed-container flex-grow-1" id="activityFeed">
                     <div class="text-center text-dim my-5" id="emptyFeedState">
                         <i class="fas fa-satellite-dish fa-3x mb-3" style="opacity: 0.5;"></i>
@@ -84,27 +129,15 @@
 
         <!-- Active Students Roster & Stats -->
         <div class="col-lg-4 mb-4">
-            <div class="glass-card mb-4" style="background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.05) 100%);">
-                <h5 class="font-weight-bold mb-3"><i class="fas fa-chart-pie mr-2 text-primary"></i> Live Overview</h5>
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-light">Active Connections:</span>
-                    <strong class="text-primary fs-5" id="activeCount">0</strong>
+            <div class="glass-card d-flex flex-column" style="max-height: 800px;">
+                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3" style="border-color: var(--glass-border) !important;">
+                    <h6 class="font-weight-bold mb-0">
+                        <i class="fas fa-users mr-2 text-primary"></i> Students Online
+                    </h6>
+                    <span class="badge badge-primary px-2" id="activeCountBadge">0</span>
                 </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-light">Completed:</span>
-                    <strong class="text-success fs-5" id="completedCount">0</strong>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span class="text-light">Violations Caught:</span>
-                    <strong class="text-danger fs-5" id="violationsCount">0</strong>
-                </div>
-            </div>
-
-            <div class="glass-card d-flex flex-column" style="height: calc(100% - 170px);">
-                <h6 class="font-weight-bold mb-3 border-bottom pb-2" style="border-color: var(--glass-border) !important;">
-                    <i class="fas fa-users mr-2 text-primary"></i> Students Online
-                </h6>
-                <div class="feed-container flex-grow-1" id="studentList">
+                
+                <div class="feed-container flex-grow-1 px-1" id="studentRoster">
                     <div class="text-center text-dim my-4" id="emptyStudentsState">
                         <p class="small">No students connected yet.</p>
                     </div>
@@ -124,137 +157,205 @@
     socket.emit('join_test_room', testID);
 
     // State
-    let activeStudents = new Set();
-    let completedStudents = new Set();
-    let violations = 0;
+    const studentsData = new Map(); // email -> student_object
+    let focusedEmail = null;
+    let globalViolationsCount = 0;
 
     // DOM Elements
     const feed = document.getElementById('activityFeed');
     const emptyFeedState = document.getElementById('emptyFeedState');
-    const studentList = document.getElementById('studentList');
+    const roster = document.getElementById('studentRoster');
     const emptyStudentsState = document.getElementById('emptyStudentsState');
-    const activeCountEl = document.getElementById('activeCount');
-    const completedCountEl = document.getElementById('completedCount');
-    const violationsCountEl = document.getElementById('violationsCount');
+    const activeCountEl = document.getElementById('activeCountBadge');
+    const feedTitle = document.getElementById('feedTitle');
+    const resetFeedBtn = document.getElementById('resetFeedBtn');
 
-    function appendFeedItem(type, title, message, time) {
+    function createStudentCard(data) {
+        const card = document.createElement('div');
+        card.id = `card-${data.studentEmail.replace(/[@.]/g, '_')}`;
+        card.className = `student-card ${focusedEmail === data.studentEmail ? 'active-focus' : ''}`;
+        card.onclick = () => focusStudent(data.studentEmail);
+
+        const statusClass = getStatusClass(data.riskLevel);
+        const lastActivity = data.lastActivity || 'No incidents yet';
+
+        card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex align-items-center">
+                    <span class="status-indicator status-safe animate-pulse"></span>
+                    <strong style="color: var(--text-base); font-size: 0.9rem;" title="${data.studentEmail}">${data.studentEmail.split('@')[0]}</strong>
+                </div>
+                <span class="badge badge-pill badge-primary card-stat">Score: ${data.cheatScore || 0}</span>
+            </div>
+            
+            <p class="mb-2 text-dim x-small" style="font-size: 0.7rem; line-height: 1.2;">
+                <i class="fas fa-history mr-1"></i> ${lastActivity}
+            </p>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <span class="card-stat"><i class="fas fa-exclamation-triangle mr-1 text-warning"></i> ${data.violationCount} Violations</span>
+                <button class="btn btn-sm btn-primary py-0 px-2 card-btn" style="font-size: 0.6rem;">Focus View</button>
+            </div>
+        `;
+        return card;
+    }
+
+    function getStatusClass(level) {
+        if (level === 'CRITICAL' || level === 'HIGH') return 'status-critical';
+        if (level === 'MEDIUM' || level === 'MODERATE') return 'status-warning';
+        return 'status-safe';
+    }
+
+    function focusStudent(email) {
+        focusedEmail = email;
+        
+        // Update UI
+        if (email) {
+            feedTitle.innerText = `Focused Monitor: ${email}`;
+            resetFeedBtn.style.display = 'block';
+        } else {
+            feedTitle.innerText = `Combined Activity Feed`;
+            resetFeedBtn.style.display = 'none';
+        }
+
+        // Re-render feed and cards
+        renderActivityFeed();
+        renderRoster();
+    }
+
+    function renderRoster() {
+        if (studentsData.size > 0) emptyStudentsState.style.display = 'none';
+        roster.innerHTML = '';
+        
+        // Sort: Active/Higher Violations first
+        const sorted = [...studentsData.values()].sort((a, b) => b.violationCount - a.violationCount);
+        
+        sorted.forEach(data => {
+            roster.appendChild(createStudentCard(data));
+        });
+        
+        activeCountEl.innerText = studentsData.size;
+    }
+
+    function renderActivityFeed() {
+        const allItems = [...feed.querySelectorAll('.feed-item')];
+        let visibleCount = 0;
+
+        allItems.forEach(item => {
+            if (!focusedEmail || item.dataset.email === focusedEmail) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        emptyFeedState.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    function appendFeedItem(data) {
         if(emptyFeedState) emptyFeedState.style.display = 'none';
         
         const item = document.createElement('div');
+        const type = data.activityType === 'AI_DETECTION' ? 'ai-alert' : (['FULLSCREEN_EXIT', 'TAB_SWITCH', 'PROHIBITED_KEY'].includes(data.activityType) ? 'violation' : (data.activityType === 'student_joined' ? 'join' : 'submit'));
+        
         item.className = `feed-item ${type}`;
+        item.dataset.email = data.studentEmail;
+        item.style.display = (!focusedEmail || data.studentEmail === focusedEmail) ? 'block' : 'none';
         
         // Define Icon based on type
         let icon = 'fa-info-circle text-primary';
         if(type === 'submit') icon = 'fa-check-circle text-success';
         if(type === 'violation') icon = 'fa-exclamation-triangle text-danger';
+        if(type === 'ai-alert') icon = 'fa-eye text-pink';
+
+        let title = data.activityType.replace(/_/g, ' ').title();
+        let message = data.details?.message || 'Activity detected';
+
+        // Custom mappings
+        if (data.activityType === 'AI_DETECTION') {
+            title = `AI ALERT: ${data.anomalyType.replace(/_/g, ' ')}`;
+            message = `Confidence level: <b>${(data.confidence * 100).toFixed(0)}%</b>`;
+        } else if (data.activityType === 'TAB_SWITCH') {
+            title = "External Assistance Risk";
+            message = `Student was away for ${data.details.durationSeconds.toFixed(1)}s.`;
+        }
 
         item.innerHTML = `
             <div class="d-flex justify-content-between align-items-start">
                 <div class="d-flex">
                     <i class="fas ${icon} mt-1 mr-3 fs-5"></i>
                     <div>
-                        <h6 class="font-weight-bold mb-1" style="color: var(--text-base);">${title}</h6>
-                        <p class="mb-0 text-dim small">${message}</p>
+                        <h6 class="font-weight-bold mb-0" style="color: var(--text-base); font-size: 0.9rem;">${title}</h6>
+                        <p class="mb-0 text-dim x-small">${data.studentEmail} — <span style="opacity: 0.8;">${message}</span></p>
                     </div>
                 </div>
-                <span class="badge badge-secondary" style="background: rgba(255,255,255,0.1);">${new Date(time).toLocaleTimeString()}</span>
+                <span class="badge badge-secondary" style="background: rgba(255,255,255,0.05); font-size: 0.6rem;">${new Date(data.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
             </div>
         `;
         
         feed.insertBefore(item, feed.firstChild);
     }
 
-    function updateStudentRoster() {
-        if (activeStudents.size > 0 || completedStudents.size > 0) {
-            emptyStudentsState.style.display = 'none';
-        }
-        
-        studentList.innerHTML = ''; // Re-render list
-        
-        activeStudents.forEach(email => {
-            const el = document.createElement('div');
-            el.className = 'student-item';
-            el.innerHTML = `
-                <div style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; margin-right: 12px; box-shadow: 0 0 5px #3b82f6;"></div>
-                <span style="color: var(--text-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${email}">${email}</span>
-            `;
-            studentList.appendChild(el);
-        });
-        
-        completedStudents.forEach(email => {
-             const el = document.createElement('div');
-            el.className = 'student-item opacity-50';
-            el.innerHTML = `
-                <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-right: 12px;"></div>
-                <span class="text-dim" style="text-decoration: line-through; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${email}">${email} (Submitted)</span>
-            `;
-            studentList.appendChild(el);
-        });
-
-        activeCountEl.innerText = activeStudents.size;
-        completedCountEl.innerText = completedStudents.size;
+    String.prototype.title = function() {
+        return this.charAt(0).toUpperCase() + this.slice(1).toLowerCase();
     }
 
     // Socket Listeners
-
-    // Custom Join Event (we need the client to emit this so we know who they are)
-    // We already have 'join_test_room' on backend, let's catch standard connection
-    // Or we will just rely on activity/submit to populate the roster.
-    
-    // We can infer a student joined if they emit any activity or submit. 
-    // Ideally, we'd add socket.emit('student_joined', {testID, studentEmail}) in studentTest.ejs as well.
-    // Let's listen for it anyway
     socket.on('student_joined', (data) => {
-        if (!completedStudents.has(data.studentEmail) && !activeStudents.has(data.studentEmail)) {
-            activeStudents.add(data.studentEmail);
-            updateStudentRoster();
-            appendFeedItem('join', 'Student Joined', `${data.studentEmail} has entered the examination.`, new Date().toISOString());
+        if (!studentsData.has(data.studentEmail)) {
+            studentsData.set(data.studentEmail, {
+                studentEmail: data.studentEmail,
+                violationCount: 0,
+                cheatScore: 0,
+                riskLevel: 'LOW',
+                lastActivity: 'Joined Exam'
+            });
+            renderRoster();
+            appendFeedItem({ ...data, activityType: 'student_joined', timestamp: new Date().toISOString() });
         }
     });
 
     socket.on('live_activity_update', (data) => {
-        // Ensure student is in roster
-        activeStudents.add(data.studentEmail);
-        updateStudentRoster();
-        
-        violations++;
-        violationsCountEl.innerText = violations;
-
-        let title = "Suspicious Activity";
-        let message = `${data.studentEmail} triggered a generic warning.`;
-        
-        if (data.activityType === 'TAB_SWITCH') {
-            title = "Tab Switch Duration";
-            message = `<strong class="text-danger">${data.studentEmail}</strong> was away from the test tab for ${data.details.durationSeconds.toFixed(1)}s.`;
-        } else if (data.activityType === 'TAB_SWITCH_INSTANT') {
-            title = "Tab Switch Detected";
-            message = `<strong class="text-danger">${data.studentEmail}</strong> has just switched tabs or minimized the browser!`;
-        } else if (data.activityType === 'FULLSCREEN_EXIT') {
-            title = "Fullscreen Penalty Duration";
-            message = `<strong class="text-danger">${data.studentEmail}</strong> returned to fullscreen after ${data.details.durationSeconds.toFixed(1)}s.`;
-        } else if (data.activityType === 'FULLSCREEN_EXIT_INSTANT') {
-            title = "Fullscreen Exited";
-            message = `<strong class="text-danger">${data.studentEmail}</strong> has just exited fullscreen mode!`;
-        } else if (data.activityType === 'WINDOW_BLUR') {
-            title = "Window Focus Lost";
-            message = `<strong class="text-danger">${data.studentEmail}</strong> clicked outside the test window or opened an overlay!`;
-        } else if (data.activityType === 'MOUSE_LEAVE') {
-            title = "Mouse Left Window";
-            message = `<strong class="text-danger">${data.studentEmail}</strong> moved their cursor outside the test area!`;
-        } else if (data.activityType === 'PROHIBITED_KEY') {
-            title = "Prohibited Key Pressed";
-            message = `<strong class="text-danger">${data.studentEmail}</strong> attempted to use a restricted key/shortcut: <b>${data.details.message}</b>`;
+        // Ensure student exists
+        if (!studentsData.has(data.studentEmail)) {
+            studentsData.set(data.studentEmail, {
+                studentEmail: data.studentEmail,
+                violationCount: 0,
+                cheatScore: 0,
+                riskLevel: 'LOW',
+                lastActivity: 'Monitoring Active'
+            });
         }
 
-        appendFeedItem('violation', title, message, data.timestamp);
+        const student = studentsData.get(data.studentEmail);
+        student.violationCount++;
+        
+        // Update sentiment/last activity
+        let activityDesc = data.activityType === 'AI_DETECTION' ? `AI: ${data.anomalyType}` : data.activityType;
+        student.lastActivity = activityDesc.replace(/_/g, ' ').title();
+
+        // Simple Score Simulation (in absence of real-time score aggregator)
+        if (data.activityType === 'AI_DETECTION') {
+            student.cheatScore += 5;
+        } else {
+            student.cheatScore += 2;
+        }
+        
+        if (student.cheatScore > 50) student.riskLevel = 'CRITICAL';
+        else if (student.cheatScore > 25) student.riskLevel = 'MEDIUM';
+
+        renderRoster();
+        appendFeedItem(data);
     });
 
     socket.on('live_submission_update', (data) => {
-        activeStudents.delete(data.studentEmail);
-        completedStudents.add(data.studentEmail);
-        updateStudentRoster();
-        
-        appendFeedItem('submit', 'Test Submitted', `${data.studentEmail} successfully submitted their test.`, new Date().toISOString());
+        const student = studentsData.get(data.studentEmail);
+        if (student) {
+            student.lastActivity = 'Test Submitted';
+            renderRoster();
+        }
+        appendFeedItem({ ...data, activityType: 'submit', timestamp: new Date().toISOString() });
     });
 
 </script>

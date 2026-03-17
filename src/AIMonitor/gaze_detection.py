@@ -243,7 +243,7 @@ Features
 import time
 import cv2
 import numpy as np
-import mediapipe.python.solutions.face_mesh as mp_face_mesh
+# import mediapipe.solutions.face_mesh as mp_face_mesh
 
 from config import (
     GAZE_AWAY_DURATION_THRESHOLD,
@@ -257,7 +257,7 @@ from config import (
     MAX_BLINK_DURATION
 )
 
-_mp_face_mesh = mp_face_mesh
+# _mp_face_mesh = mp_face_mesh
 
 # Landmark indices
 _LEFT_EYE = [33, 133]
@@ -285,13 +285,14 @@ _MOUTH_BOT = [14, 15, 16]
 class GazeDetector:
 
     def __init__(self):
-
-        self.face_mesh = _mp_face_mesh.FaceMesh(
-            max_num_faces=1,
-            refine_landmarks=True,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
+        # MediaPipe disabled temporarily due to Python 3.13 compatibility issues
+        self.face_mesh = None 
+        # self.face_mesh = _mp_face_mesh.FaceMesh(
+        #     max_num_faces=1,
+        #     refine_landmarks=True,
+        #     min_detection_confidence=0.5,
+        #     min_tracking_confidence=0.5,
+        # )
 
         self._away_start = None
         self._blink_start = None
@@ -306,21 +307,21 @@ class GazeDetector:
 
         h, w, _ = frame.shape
 
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = self.face_mesh.process(rgb)
+        # MediaPipe disabled temporarily
+        # rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # results = self.face_mesh.process(rgb)
+        results = None 
 
         events = []
         direction = "looking_at_screen"
         blinking = False
         talking = False
 
-        if not results.multi_face_landmarks:
-            direction = "looking_away"
-
+        if results is None or not results.multi_face_landmarks:
+            # direction = "looking_away"
+            pass 
         else:
-
             landmarks = results.multi_face_landmarks[0].landmark
-
             direction = self._classify_gaze(landmarks, w, h)
             blinking = self._check_blink(landmarks)
             talking = self._check_mouth(landmarks)

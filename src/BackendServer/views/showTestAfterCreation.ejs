@@ -13,6 +13,97 @@
       </div>
     </div>
   <% } else { %>
+    <!-- Invitation Section -->
+    <div class="row justify-content-center mb-5">
+      <div class="col-md-10">
+        <div class="glass-card" style="border: 1px solid var(--primary); background: rgba(212, 16, 170, 0.05);">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h4 class="font-weight-bold mb-2"><i class="fas fa-paper-plane mr-2" style="color: var(--primary);"></i>Invite Students</h4>
+                    <p class="text-dim small mb-3">Send professional invitations with the direct join link and access code.</p>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="input-group" style="flex: 1;">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="background: var(--bg-input); border-color: var(--glass-border); color: var(--text-dim); border-radius: 8px 0 0 8px;"><i class="fas fa-link"></i></span>
+                            </div>
+                            <input type="text" id="directLinkInput" class="form-control" readonly value="http://localhost:5000/student/join/<%= test.id %>" style="background: var(--bg-input); border-color: var(--glass-border); color: var(--primary); font-family: monospace; border-radius: 0 8px 8px 0;">
+                        </div>
+                        <button class="btn btn-outline-primary ml-2" type="button" onclick="copyDirectLink()" title="Copy Link" style="border-radius: 8px; width: 45px; height: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="far fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <form action="/teacher/sendInvites" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="testID" value="<%= test.id %>">
+                        <input type="hidden" name="accessCode" value="<%= test.accessCode %>">
+                        
+                        <div class="form-group mb-2">
+                            <label class="small text-dim font-weight-bold mb-1">MANUAL EMAILS (Comma separated)</label>
+                            <textarea name="emails" class="form-control" rows="1" placeholder="student1@example.com..." style="background: rgba(255,255,255,0.05); font-size: 0.85rem; border-color: var(--glass-border);"></textarea>
+                        </div>
+
+                        <div class="text-center my-2">
+                            <span class="badge badge-dark p-1" style="font-size: 0.7rem; background: rgba(0,0,0,0.2);">OR</span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="small text-dim font-weight-bold mb-1">BULK UPLOAD (Excel)</label>
+                            <div class="custom-file" style="font-size: 0.85rem;">
+                                <input type="file" name="inviteFile" class="custom-file-input" id="inviteFile" accept=".xlsx, .xls">
+                                <label class="custom-file-label" for="inviteFile" style="background: rgba(255,255,255,0.05); border-color: var(--glass-border); color: var(--text-dim);">Choose file...</label>
+                            </div>
+                            <small class="text-dim mt-1 d-block" style="font-size: 0.75rem;">Columns: <strong>Name</strong>, <strong>Email</strong></small>
+                        </div>
+
+                        <button type="submit" class="btn-snoop w-100 justify-content-center py-2">
+                            Send Invitations <i class="fas fa-paper-plane ml-2"></i>
+                        </button>
+                    </form>
+                    <script>
+                        document.getElementById('inviteFile')?.addEventListener('change', function(e) {
+                            var fileName = e.target.files[0]?.name || 'Choose file...';
+                            e.target.nextElementSibling.innerText = fileName;
+                        });
+                    </script>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    async function copyDirectLink() {
+        const copyText = document.getElementById("directLinkInput");
+        const btn = event.currentTarget || event.target;
+        
+        try {
+            await navigator.clipboard.writeText(copyText.value);
+            
+            // Show visual feedback
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            btn.style.color = 'white';
+            btn.style.borderColor = '#10b981';
+            btn.style.transform = 'scale(1.1)';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.style.borderColor = '';
+                btn.style.transform = '';
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+            // Fallback for older browsers
+            copyText.select();
+            document.execCommand("copy");
+        }
+    }
+    </script>
     <div class="text-center mb-4">
       <span class="badge badge-info" style="font-size: 16px; padding: 10px 20px;">
         <i class="fas fa-list mr-2"></i> Total Questions: <%= test.questions.length %>

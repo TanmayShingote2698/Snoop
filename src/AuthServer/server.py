@@ -105,7 +105,11 @@ class verifyAdmin(Resource):
         result = authFunc.verifyAdmin(response['email'], response['password'])
 
         if result and isinstance(result, dict) and result.get('status'):
-            return {'verify':'Success', 'name': result.get('name')}    
+            return {
+                'verify':'Success', 
+                'name': result.get('name'),
+                'photo_url': result.get('photo_url')
+            }    
 
         return {'verify':'Fail'}
 
@@ -153,7 +157,7 @@ class UpdateProfile(Resource):
         table = "admin" if args['role'] == "teacher" else "student"
         update_data = {"name": args['name']}
         
-        if args['photo_url'] and table == "student":
+        if args['photo_url']:
             update_data["photo_url"] = args['photo_url']
             
         success = authFunc.db.updateEntry(table, {"email": args['email'].lower()}, update_data)
