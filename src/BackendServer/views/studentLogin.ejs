@@ -8,6 +8,11 @@
       </div>
 
       <form action="/student/login" method="POST">
+        <% if (locals.returnTo) { %>
+            <input type="hidden" name="returnTo" value="<%= returnTo %>">
+        <% } else if (typeof query !== 'undefined' && query.returnTo) { %>
+            <input type="hidden" name="returnTo" value="<%= query.returnTo %>">
+        <% } %>
         <div class="form-group">
           <label><i class="fas fa-envelope mr-2"></i>Email Address</label>
           <input name="email" type="email" class="form-control" placeholder="name@example.com" required>

@@ -82,7 +82,7 @@ async function getTestById(testID) {
 }
 
 router.get("/login", checkNotAuthenticated, (req, res) => {
-  res.render("studentLogin");
+  res.render("studentLogin", { returnTo: req.query.returnTo });
   // res.sendFile(`${publicDirPath}/studentLogin.html`);
 });
 
@@ -132,12 +132,32 @@ router.post("/login", async (req, res) => {
       photo_url: userPhoto
     };
 
+    // Handle Redirection
+    if (req.body.returnTo) {
+      return res.redirect(req.body.returnTo);
+    }
+
     res.redirect("/student/home?email=" + encodeURIComponent(req.body.email) + "&success=" + encodeURIComponent(`Welcome back, ${userName}!`));
 
   });
 
 });
 
+
+// Direct Test Join Link
+router.get("/join/:testID", (req, res) => {
+    const testID = req.params.testID;
+    
+    if (!req.session.user) {
+        return res.redirect(`/student/login?returnTo=${encodeURIComponent('/student/join/' + testID)}`);
+    }
+
+    res.render("joinTest", {
+        testID,
+        email: req.session.user.email,
+        hideHome: true
+    });
+});
 
 router.get("/tp", (req, res) => {
   res.render("tp");

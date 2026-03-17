@@ -1,4 +1,4 @@
-  <div class="text-center mb-5" style="margin-top: 5px;">
+<div class="text-center mb-5" style="margin-top: 5px;">
     <h2 class="font-weight-bold"><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Available Examinations' %></h2>
     <p class="text-dim">Monitor and manage your active test sessions.</p>
   </div>
@@ -98,9 +98,132 @@
                   <i class="fas fa-trash-alt mr-1"></i> Delete Test
                 </button>
               </form>
+
+              <% if (status !== 'Completed') { %>
+              <button type="button" class="btn btn-outline-primary btn-sm w-100 rounded-pill mt-2" 
+                      data-toggle="modal" data-target="#inviteModal" 
+                      data-testid="<%= test.id %>" 
+                      data-accesscode="<%= test.accessCode %>">
+                <i class="fas fa-paper-plane mr-1"></i> Invite Students
+              </button>
+              <% } %>
             </div>
           </div>
         </div>
       <% }) %>
     <% } %>
   </div>
+
+  <!-- Invite Modal -->
+  <div class="modal fade" id="inviteModal" tabindex="-1" role="dialog" aria-labelledby="inviteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--glass-border); backdrop-filter: blur(20px);">
+        <div class="modal-header border-0">
+          <h5 class="modal-title font-weight-bold" id="inviteModalLabel" style="color: var(--text-main);">
+            <i class="fas fa-paper-plane mr-2" style="color: var(--primary);"></i>Invite Students
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: var(--text-dim);">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <p class="text-dim small mb-4">Send professional invitations for test <strong id="inviteModalTestIDDisplay" style="color: var(--primary);"></strong>.</p>
+            
+            <div class="d-flex align-items-center mb-3">
+                <input type="text" id="inviteDirectLink" class="form-control" readonly style="background: rgba(0,0,0,0.2); border-color: var(--glass-border); color: var(--primary); font-size: 0.8rem; font-family: monospace; border-radius: 8px;">
+                <button class="btn btn-outline-primary btn-sm ml-2" type="button" id="copyBtn" title="Copy Link" style="width: 40px; height: 31px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="far fa-copy"></i>
+                </button>
+            </div>
+
+            <form action="/teacher/sendInvites" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="testID" id="inviteModalTestID">
+                <input type="hidden" name="accessCode" id="inviteModalAccessCode">
+                
+                <div class="form-group mb-2">
+                    <label class="small text-dim font-weight-bold mb-1">MANUAL ENTRY (Comma separated)</label>
+                    <textarea name="emails" class="form-control" rows="2" placeholder="student1@mail.com, student2@mail.com"
+                           style="background: rgba(0,0,0,0.2) !important; color: var(--text-main) !important; font-size: 0.85rem; border-color: var(--glass-border);"></textarea>
+                </div>
+
+                <div class="text-center my-2">
+                    <span class="badge badge-dark p-1" style="font-size: 0.7rem; background: rgba(0,0,0,0.2);">OR</span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="small text-dim font-weight-bold mb-1">BULK UPLOAD (Excel File)</label>
+                    <div class="custom-file" style="font-size: 0.85rem;">
+                        <input type="file" name="inviteFile" class="custom-file-input" id="inviteModalFile" accept=".xlsx, .xls">
+                        <label class="custom-file-label" for="inviteModalFile" style="background: rgba(0,0,0,0.2); border-color: var(--glass-border); color: var(--text-dim);">Choose file...</label>
+                    </div>
+                    <small class="text-dim mt-1 d-block" style="font-size: 0.7rem;">Needs <strong>Name</strong> & <strong>Email</strong> columns.</small>
+                </div>
+
+                <button type="submit" class="btn-snoop w-100 justify-content-center mt-3">
+                    Send Invites <i class="fas fa-paper-plane ml-2"></i>
+                </button>
+            </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof $ !== 'undefined') {
+            // Initialize Modal with Test Data
+            $('#inviteModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                var testID = button.data('testid');
+                var accessCode = button.data('accesscode');
+                var link = window.location.origin + '/student/join/' + testID;
+                
+                var modal = $(this);
+                modal.find('#inviteModalTestID').val(testID);
+                modal.find('#inviteModalAccessCode').val(accessCode);
+                modal.find('#inviteModalTestIDDisplay').text(testID);
+                modal.find('#inviteDirectLink').val(link);
+            });
+
+            // Modern Copy to Clipboard
+            $('#copyBtn').click(async function() {
+                var copyText = document.getElementById("inviteDirectLink");
+                var btn = $(this);
+                
+                try {
+                    await navigator.clipboard.writeText(copyText.value);
+                    
+                    var originalHTML = btn.html();
+                    btn.html('<i class="fas fa-check"></i>');
+                    btn.css({
+                        'background': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        'border-color': '#10b981',
+                        'color': 'white',
+                        'transform': 'scale(1.1)',
+                        'transition': 'all 0.2s ease'
+                    }).addClass('shadow-sm');
+
+                    setTimeout(() => {
+                        btn.html(originalHTML).css({
+                            'background': '',
+                            'border-color': '',
+                            'color': '',
+                            'transform': '',
+                            'transition': ''
+                        }).removeClass('shadow-sm');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy: ', err);
+                    copyText.select();
+                    document.execCommand("copy");
+                }
+            });
+
+            // Update Excel File Label on Selection
+            $('#inviteModalFile').on('change', function(e) {
+                var fileName = e.target.files[0]?.name || 'Choose file...';
+                $(this).next('.custom-file-label').html(fileName);
+            });
+        }
+    });
+  </script>

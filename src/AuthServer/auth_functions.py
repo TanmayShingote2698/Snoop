@@ -88,7 +88,7 @@ class authFunctions:
         print(f"[AUTH] Verifying Admin: {email}")
         
         # SECURITY FIX: Using parameterized-style query (safer)
-        query = f"select email,password,name from admin where email='{email}'"
+        query = f"select email,password,name,photo_url from admin where email='{email}'"
         adminData = self.db.runQuery(query)
         
         print(f"[AUTH] Query Result for {email}: {len(adminData)} records found")
@@ -103,7 +103,7 @@ class authFunctions:
         print(f"[AUTH] Password valid: {is_valid}")
         
         if is_valid:
-            return {"status": True, "name": adminData['name']}
+            return {"status": True, "name": adminData['name'], "photo_url": adminData.get('photo_url')}
         return False
 
     

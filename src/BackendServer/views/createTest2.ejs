@@ -164,7 +164,7 @@
             style="background: rgba(255,255,255,0.05); border-left: 4px solid var(--primary);">
             <div class="d-flex justify-content-between align-items-start mb-2">
               <div style="flex: 1;">
-                <span class="font-weight-bold">Q<%= index + 1 %>: <%= q.question %></span>
+                <span class="font-weight-bold">Q<%= index + 1 %>: <%= String(q.question) %></span>
               </div>
               <div class="ml-3">
                 <span class="badge badge-success mr-2"><%= q.op1 ? 'MCQ' : 'Subjective' %></span>
@@ -175,11 +175,11 @@
             </div>
             <% if (q.op1) { %>
               <div class="ml-3 small">
-                <p class="mb-1"><strong>A)</strong> <%= q.op1 %></p>
-                <p class="mb-1"><strong>B)</strong> <%= q.op2 %></p>
-                <p class="mb-1"><strong>C)</strong> <%= q.op3 %></p>
-                <p class="mb-1"><strong>D)</strong> <%= q.op4 %></p>
-                <p class="mb-0 text-info"><strong>Answer:</strong> <%= q.answer %></p>
+                <p class="mb-1"><strong>A)</strong> <%= String(q.op1) %></p>
+                <p class="mb-1"><strong>B)</strong> <%= String(q.op2) %></p>
+                <p class="mb-1"><strong>C)</strong> <%= String(q.op3) %></p>
+                <p class="mb-1"><strong>D)</strong> <%= String(q.op4) %></p>
+                <p class="mb-0 text-info"><strong>Answer:</strong> <%= String(q.answer) %></p>
               </div>
             <% } %>
           </div>
@@ -383,8 +383,7 @@
             btn.innerHTML = '<i class="fas fa-magic mr-2"></i> Generate Questions';
           }
         }
-
-        let questions = [];
+        let questions = <%- JSON.stringify(locals.questions || []) %>;
         
         // ===== GLOBAL HELPER FUNCTIONS FOR AI QUESTION DISPLAY =====
         
@@ -397,21 +396,7 @@
           }
           
           const questionContainer = document.querySelector('.added-questions-list');
-          if (!questionContainer) {
-            // Fallback: create container if it doesn't exist  
-            const newSection = document.createElement('div');
-            newSection.id = 'added-questions-section';
-            newSection.className = 'glass-card mb-5 p-4';
-            newSection.innerHTML = `
-              <h4 class="mb-4 border-bottom pb-2"><i class="fas fa-list mr-2"></i> Added Questions (<span class="question-count">0</span>)</h4>
-              <div class="added-questions-list"></div>
-            `;
-            // Insert before displayques div
-            const displayQues = document.getElementById('displayques');
-            if (displayQues) {
-              displayQues.parentNode.insertBefore(newSection, displayQues);
-            }
-          }
+          if (!questionContainer) return;
           
           const qDiv = document.createElement('div');
           qDiv.className = 'p-3 mb-3 rounded question-item';
@@ -424,7 +409,7 @@
                 <span class="font-weight-bold">Q${qNum}: ${q.question}</span>
               </div>
               <div class="ml-3">
-                <span class="badge badge-success mr-2">${q.type.toUpperCase()}</span>
+                <span class="badge badge-success mr-2">${q.type ? q.type.toUpperCase() : 'MCQ'}</span>
                 <button type="button" class="btn btn-sm btn-danger delete-question-btn" onclick="deleteQuestion(event)" title="Delete this question">
                   <i class="fas fa-trash-alt"></i> Delete
                 </button>
@@ -432,7 +417,7 @@
             </div>
           `;
           
-          if (q.type.toLowerCase() === 'mcq') {
+          if (q.op1) {
             qContent += `
               <div class="ml-3 small">
                 <p class="mb-1"><strong>A)</strong> ${q.op1}</p>
@@ -444,12 +429,12 @@
             `;
           } else {
             qContent += `
-              <p class="ml-3 small text-info mb-0"><strong>Answer:</strong> ${q.answer}</p>
+              <p class="ml-3 small text-info mb-0"><strong>Answer:</strong> ${q.answer || 'Subjective'}</p>
             `;
           }
           
           qDiv.innerHTML = qContent;
-          document.querySelector('.added-questions-list').appendChild(qDiv);
+          questionContainer.appendChild(qDiv);
         }
         
         // Delete a question
@@ -462,10 +447,9 @@
           const testID = '<%= testIDfromNode %>';
           
           if (confirm('Are you sure you want to delete this question?')) {
-            // Remove from frontend array first
+            // Remove from frontend array
             if (questionIndex >= 0 && questionIndex < questions.length) {
               questions.splice(questionIndex, 1);
-              console.log(`🗑️ Removed Q${questionIndex + 1} from frontend array`);
             }
             
             // Send delete request to backend
@@ -483,7 +467,7 @@
             .then(response => response.json())
             .then(data => {
               if (data.success) {
-                console.log(`✅ Question deleted from backend (TestID: ${testID})`);
+                console.log(`✅ Question deleted from backend`);
               } else {
                 console.error(`❌ Backend delete failed: ${data.message}`);
               }
@@ -495,9 +479,7 @@
             questionDiv.style.opacity = '0';
             setTimeout(() => {
               questionDiv.remove();
-              // Re-number all questions
               renumberQuestions();
-              // Update counter
               updateQuestionCounter();
             }, 300);
           }
@@ -534,9 +516,6 @@
           const finalizeBtn = document.querySelector('button[style*="#10b981"]');
           const originalBtnContent = finalizeBtn ? finalizeBtn.innerHTML : '';
           
-          console.log(`💾 BATCH DATABASE SAVE START - TestID: ${testID} | Total: ${questionsToSave.length}`);
-          
-          // Show saving state on finalize button
           if (finalizeBtn) {
             finalizeBtn.disabled = true;
             finalizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving Questions...';
@@ -556,10 +535,6 @@
             });
 
             if (response.ok) {
-              const data = await response.json();
-              console.log(`✅ BATCH SAVE SUCCESS - Server confirms ${data.totalQuestions} total questions now.`);
-              
-              // Flash a brief success message on the button
               if (finalizeBtn) {
                   finalizeBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
                   finalizeBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Saved Successfully!';
@@ -570,96 +545,16 @@
                   }, 2000);
               }
             } else {
-              const errorData = await response.json();
-              throw new Error(errorData.message || 'Failed to save questions');
+              throw new Error('Failed to save questions');
             }
           } catch (error) {
             console.error(`❌ BATCH SAVE ERROR: ${error.message}`);
-            alert('⚠️ Error saving some questions to database. Please check your connection and try clicking "Finalize" again.');
-            
-            // Reset button on error so they can try to finalize again
             if (finalizeBtn) {
                 finalizeBtn.disabled = false;
                 finalizeBtn.innerHTML = originalBtnContent;
             }
           }
         }
-        
-        // ===== END GLOBAL HELPERS =====
-        
-        function submitQuestion(type) {
-          let question = {};
-          question.type = type;
-        }
-
-        document
-          .getElementById("submitmcq")
-          .addEventListener("click", function () {
-            let question = {};
-            question.type = "mcq";
-            question.question = document.getElementById("mcqquestion").value;
-            question.op1 = document.getElementById("op1").value;
-            question.op2 = document.getElementById("op2").value;
-            question.op3 = document.getElementById("op3").value;
-            question.op4 = document.getElementById("op4").value;
-            question.ans = document.getElementById("answer").value;
-            //   console.log(question.question);
-            questions.push(question);
-            document.getElementById("mcqform").style.display = "none";
-          });
-
-        document
-          .getElementById("submitsub")
-          .addEventListener("click", function () {
-            let question = {};
-            question.type = "subjective";
-            question.question = document.getElementById("subquestion").value;
-            //   console.log(question.question);
-            questions.push(question);
-            document.getElementById("subform").style.display = "none";
-          });
-
-        function displayQuestionsFunction(check) {
-          console.log(questions);
-          let questionsArr = ``;
-          for (let i = 0; i < questions.length; i++) {
-            if (questions[i].type === "mcq") {
-              questionsArr += `Question ${i + 1}: <br>`;
-              questionsArr += questions[i].question;
-              questionsArr += `<br>`;
-              questionsArr += `Options: <br>`;
-              questionsArr += questions[i].op1;
-              questionsArr += `<br>`;
-              questionsArr += questions[i].op2;
-              questionsArr += `<br>`;
-              questionsArr += questions[i].op3;
-              questionsArr += `<br>`;
-              questionsArr += questions[i].op4;
-              questionsArr += `<br>`;
-              questionsArr += `Answer: <br>`;
-              questionsArr += questions[i].ans;
-              questionsArr += `<br>`;
-            } else {
-              questionsArr += `Question: ${i + 1} <br>`;
-              questionsArr += questions[i].question;
-              questionsArr += `<br>`;
-            }
-          }
-          document.getElementById("displayques").style.display = "block";
-          document.getElementById("displayques").innerHTML = questionsArr;
-        }
-
-        document
-          .getElementById("displayquesbtn")
-          .addEventListener("click", displayQuestionsFunction);
-
-        document
-          .getElementById("submittest")
-          .addEventListener("click", function () {
-            document.getElementById("arrayToNode").innerHTML =
-              "<% questionsOnNode = " + questions + "%>";
-            displayQuestionsFunction();
-          });
       </script>
       <!-- <script src="createTest.js"></script> -->
 

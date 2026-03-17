@@ -8,7 +8,53 @@ const xlsx = require('xlsx');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const upload = multer({ dest: 'uploads/' });
+const emailService = require('../services/emailService');
+
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+require("dotenv").config();
+
+// Cloudinary Configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const profileStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'snoop_teachers',
+        allowed_formats: ['jpg', 'png', 'jpeg'],
+    },
+});
+
+const localStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const profileUpload = multer({ storage: profileStorage });
+const localUpload = multer({ storage: localStorage });
+
+// Helper to safely extract string from xlsx cell (handles rich text objects)
+const safeString = (val) => {
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'string') return val.trim();
+    if (typeof val === 'object') {
+        if (val.h) return val.h.replace(/<[^>]*>/g, '').trim(); // Strip HTML
+        if (val.v) return String(val.v).trim();
+        if (Array.isArray(val)) return val.map(v => safeString(v)).join(' ').trim();
+        return JSON.stringify(val);
+    }
+    return String(val).trim();
+};
 const SALT_ROUNDS = 12;
 
 let teacherCred = [];
@@ -46,12 +92,12 @@ router.post("/submitQues", (req, res) => {
             
             if (req.body.op1 !== undefined && req.body.op1 !== '') {
                 const questionObj = {
-                    question: req.body.question,
-                    op1: req.body.op1,
-                    op2: req.body.op2,
-                    op3: req.body.op3,
-                    op4: req.body.op4,
-                    answer: req.body.answer,
+                    question: String(req.body.question || ''),
+                    op1: String(req.body.op1 || ''),
+                    op2: String(req.body.op2 || ''),
+                    op3: String(req.body.op3 || ''),
+                    op4: String(req.body.op4 || ''),
+                    answer: String(req.body.answer || ''),
                     type: 'mcq',
                     ind: tests[i].questions.length + 1
                 };
@@ -59,8 +105,8 @@ router.post("/submitQues", (req, res) => {
                 console.log(`   ✅ Pushed MCQ to tests[${i}].questions`);
             } else {
                 const questionObj = {
-                    question: req.body.question,
-                    answer: req.body.answer || '',
+                    question: String(req.body.question || ''),
+                    answer: String(req.body.answer || ''),
                     type: 'subjective',
                     ind: tests[i].questions.length + 1,
                 };
@@ -131,19 +177,19 @@ router.post("/submitQuestionsBatch", checkAuthenticated, (req, res) => {
     // Add questions to the test
     newQuestions.forEach(q => {
         const questionObj = {
-            question: q.question,
+            question: safeString(q.question),
             type: q.type || 'mcq',
             ind: tests[testIndex].questions.length + 1
         };
 
         if (questionObj.type === 'mcq') {
-            questionObj.op1 = q.op1 || '';
-            questionObj.op2 = q.op2 || '';
-            questionObj.op3 = q.op3 || '';
-            questionObj.op4 = q.op4 || '';
-            questionObj.answer = q.answer || '';
+            questionObj.op1 = safeString(q.op1);
+            questionObj.op2 = safeString(q.op2);
+            questionObj.op3 = safeString(q.op3);
+            questionObj.op4 = safeString(q.op4);
+            questionObj.answer = safeString(q.answer);
         } else {
-            questionObj.answer = q.answer || '';
+            questionObj.answer = safeString(q.answer);
         }
 
         tests[testIndex].questions.push(questionObj);
@@ -322,12 +368,13 @@ router.post("/login", async (req, res) => {
 
         // Set Session
         const userName = body['name'] || 'Faculty';
-        
+        const userPhoto = body['photo_url'] || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName) + '&background=random';
+
         req.session.user = {
             role: 'teacher',
             email: inputEmail,
             name: userName,
-            photo_url: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName) + '&background=random' // Use UI Avatars for teachers
+            photo_url: userPhoto
         };
         
         req.session.successMessage = `Welcome back, ${userName}!`;
@@ -390,8 +437,8 @@ router.get("/showTeachers", (req, res) => {
 });
 
 // Show test after creation
-router.post("/showTestAfterCreation", (req, res) => {
-    let testID = req.body.testID;
+router.all("/showTestAfterCreation", (req, res) => {
+    let testID = req.body.testID || req.query.testID;
     console.log(`\n📋 showTestAfterCreation called for Test ID: "${testID}" (type: ${typeof testID})`);
     console.log(`📊 Total tests in system at this moment: ${tests.length}`);
     console.log(`🔍 Full system state:`);
@@ -580,7 +627,7 @@ router.get("/profile", checkAuthenticated, (req, res) => {
     });
 });
 
-router.post("/profile", checkAuthenticated, upload.single('photo'), (req, res) => {
+router.post("/profile", checkAuthenticated, profileUpload.single('photo'), (req, res) => {
     let photoUrl = req.file ? req.file.path : req.session.user.photo_url;
     let newName = req.body.name || req.session.user.name;
 
@@ -761,6 +808,81 @@ router.post("/saveGeneratedTest", checkAuthenticated, (req, res) => {
         req.session.errorMessage = "Error saving test: " + error.message;
         res.redirect("/teacher/enterTestID");
     }
+});
+
+
+// Send Test Invitations (Supports Manual & Excel)
+router.post("/sendInvites", checkAuthenticated, localUpload.single('inviteFile'), async (req, res) => {
+    const { testID, accessCode, emails } = req.body;
+    const teacherName = req.session.user.name || "Your Teacher";
+    
+    // Find test details for the email template
+    const test = tests.find(t => t.id === testID) || {};
+    const testInfo = {
+        duration: test.testDuration,
+        startTime: test.startTime,
+        endTime: test.endTime
+    };
+
+    let invitees = [];
+
+    // 1. Process Manual Emails
+    if (emails) {
+        const manualEmails = emails.split(',').map(e => e.trim()).filter(e => e !== "");
+        manualEmails.forEach(email => invitees.push({ email, name: 'Student' }));
+    }
+
+    // 2. Process Excel File
+    if (req.file) {
+        try {
+            const workbook = xlsx.readFile(req.file.path);
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const data = xlsx.utils.sheet_to_json(worksheet);
+
+            data.forEach(row => {
+                const email = row.Email || row.email || row.EMAIL;
+                const name = row.Name || row.name || row.NAME || 'Student';
+                if (email) invitees.push({ email, name });
+            });
+
+            // Delete temporary file
+            fs.unlinkSync(req.file.path);
+        } catch (excelErr) {
+            console.error("Excel Parsing Error:", excelErr);
+            req.session.errorMessage = "Failed to parse Excel file.";
+            return res.redirect(`/teacher/showTestAfterCreation?testID=${testID}`);
+        }
+    }
+
+    if (invitees.length === 0) {
+        req.session.errorMessage = "No recipients found. Please provide emails or upload an Excel file.";
+        return res.redirect(`/teacher/showTestAfterCreation?testID=${testID}`);
+    }
+
+    const directLink = `http://localhost:5000/student/join/${testID}`;
+    console.log(`\n📧 Sending ${invitees.length} invitations for Test: ${testID} by ${teacherName}`);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const invitee of invitees) {
+        try {
+            await emailService.sendTestInvitation(invitee.email, testID, accessCode, directLink, teacherName, testInfo);
+            successCount++;
+        } catch (error) {
+            console.error(`   ❌ Failed to send to ${invitee.email}:`, error.message);
+            failCount++;
+        }
+    }
+
+    if (failCount === 0) {
+        req.session.successMessage = `Successfully sent ${successCount} invitations!`;
+    } else {
+        req.session.errorMessage = `Sent ${successCount} invitations, but ${failCount} failed. Check server logs.`;
+    }
+
+    res.redirect(`/teacher/showTestAfterCreation?testID=${testID}`);
 });
 
 
@@ -948,7 +1070,7 @@ router.get("/liveMonitor/:testID", checkAuthenticated, (req, res) => {
 });
 
 // Bulk Upload Questions
-router.post("/uploadQuestions", checkAuthenticated, upload.single('file'), (req, res) => {
+router.post("/uploadQuestions", checkAuthenticated, localUpload.single('file'), (req, res) => {
     try {
         if (!req.file) {
             req.session.errorMessage = "No file uploaded.";
@@ -960,7 +1082,8 @@ router.post("/uploadQuestions", checkAuthenticated, upload.single('file'), (req,
         const workbook = xlsx.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const data = xlsx.utils.sheet_to_json(sheet);
+        // raw: false ensures we get formatted strings instead of cell objects/raw values
+        const data = xlsx.utils.sheet_to_json(sheet, { raw: false });
 
         let test = tests.find(t => t.id === testID);
         if (!test) {
@@ -972,26 +1095,31 @@ router.post("/uploadQuestions", checkAuthenticated, upload.single('file'), (req,
 
         let addedCount = 0;
         data.forEach((row, index) => {
-            // Basic validation
-            if (!row.question || !row.type) return;
+            // Use safeString to handle potential object values from rich text cells
+            const qText = safeString(row.question);
+            const qType = safeString(row.type).toLowerCase();
 
-            let type = row.type.toLowerCase();
+            if (!qText || !qType) return;
+
             let newQ = {
-                question: row.question,
+                question: qText,
                 ind: (test.questions.length || 0) + 1
             };
 
-            if (type === 'mcq') {
+            if (qType === 'mcq') {
                 if(row.op1 && row.op2 && row.op3 && row.op4 && row.answer) {
-                    newQ.op1 = row.op1;
-                    newQ.op2 = row.op2;
-                    newQ.op3 = row.op3;
-                    newQ.op4 = row.op4;
-                    newQ.answer = row.answer;
+                    newQ.op1 = safeString(row.op1);
+                    newQ.op2 = safeString(row.op2);
+                    newQ.op3 = safeString(row.op3);
+                    newQ.op4 = safeString(row.op4);
+                    newQ.answer = safeString(row.answer);
+                    newQ.type = 'mcq';
                     test.questions.push(newQ);
                     addedCount++;
                 }
-            } else if (type === 'subjective') {
+            } else if (qType === 'subjective') {
+                newQ.type = 'subjective';
+                newQ.answer = safeString(row.answer);
                 test.questions.push(newQ);
                 addedCount++;
             }
