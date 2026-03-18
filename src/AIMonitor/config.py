@@ -76,18 +76,20 @@ consistent behaviour across the pipeline.
 # YOLOv8 OBJECT DETECTION
 # ─────────────────────────────────────────────────────────────
 
-YOLO_MODEL_PATH = "yolov8n.pt"
+YOLO_MODEL_PATH = "yolov8m.pt"
 
-# Detection confidence
-YOLO_CONFIDENCE_THRESHOLD = 0.50
+YOLO_CONFIDENCE_THRESHOLD = 0.25
 YOLO_IOU_THRESHOLD = 0.45
 
+PERSON_CONFIDENCE_THRESHOLD = 0.45
+
+MODEL_PROCESS_INTERVAL = 1
 # Classes monitored from COCO
 TARGET_CLASSES = {
     0:  "person",
     63: "laptop",
     67: "cell phone",
-    73: "book",
+    73: "book"
 }
 
 # Objects considered cheating tools
@@ -98,16 +100,12 @@ SUSPICIOUS_OBJECTS = {
 }
 
 # Person monitoring
-MAX_ALLOWED_PERSONS = 1
-PERSON_CONFIDENCE_THRESHOLD = 0.60
-
 
 # ─────────────────────────────────────────────────────────────
 # FACE DETECTION (MTCNN)
 # ─────────────────────────────────────────────────────────────
-
-MTCNN_MIN_FACE_SIZE = 60
-MTCNN_CONFIDENCE_THRESHOLD = 0.92
+MTCNN_CONFIDENCE_THRESHOLD = 0.90
+MTCNN_MIN_FACE_SIZE = 80
 
 # Face presence validation
 NO_FACE_TIMEOUT = 2.5
@@ -115,66 +113,69 @@ MULTIPLE_FACE_TIMEOUT = 1.5
 
 
 # ─────────────────────────────────────────────────────────────
-# GAZE / HEAD POSE DETECTION (MEDIAPIPE)
-# ─────────────────────────────────────────────────────────────
+# # ───── GAZE ─────
+GAZE_AWAY_DURATION_THRESHOLD = 2.0   # faster detection
 
-# Time allowed looking away
-GAZE_AWAY_DURATION_THRESHOLD = 2.5
+GAZE_LEFT_THRESHOLD  = 0.35
+GAZE_RIGHT_THRESHOLD = 0.65
+GAZE_DOWN_THRESHOLD  = 0.65
 
-# Iris position ratios
-GAZE_LEFT_THRESHOLD  = 0.38
-GAZE_RIGHT_THRESHOLD = 0.62
-GAZE_DOWN_THRESHOLD  = 0.70
+# ───── HEAD POSE ─────
+HEAD_YAW_LEFT  = -15   # degrees
+HEAD_YAW_RIGHT = 15
+HEAD_PITCH_DOWN = 15
 
-# Head orientation thresholds
-HEAD_LEFT_THRESHOLD  = 0.42
-HEAD_RIGHT_THRESHOLD = 0.58
-HEAD_DOWN_THRESHOLD  = 0.70
-
-# Blink monitoring
-BLINK_RATIO_THRESHOLD = 0.20
-MAX_BLINK_DURATION = 1.5
-
+# ───── BLINK ─────
+BLINK_RATIO_THRESHOLD = 0.18
+MAX_BLINK_DURATION = 2.0
 
 # ─────────────────────────────────────────────────────────────
 # AUDIO MONITORING
 # ─────────────────────────────────────────────────────────────
 
 AUDIO_SAMPLE_RATE = 16000
-AUDIO_CHUNK_SIZE = 1024
+AUDIO_CHUNK_SIZE = 480      
 AUDIO_CHANNELS = 1
 AUDIO_FORMAT_WIDTH = 2
 
-# Energy thresholds (RMS values)
-AUDIO_SILENCE_THRESHOLD = 0.002
-AUDIO_WHISPER_THRESHOLD = 0.010
-AUDIO_SPEECH_THRESHOLD  = 0.035
-AUDIO_NOISE_THRESHOLD   = 0.10
+# tuned thresholds
+AUDIO_SILENCE_THRESHOLD = 0.003
+AUDIO_WHISPER_THRESHOLD = 0.015
+AUDIO_SPEECH_THRESHOLD  = 0.045
+AUDIO_NOISE_THRESHOLD   = 0.08
 
-# Duration required before alert
-AUDIO_ANOMALY_DURATION = 2.0
+#  better stability
+AUDIO_ANOMALY_DURATION = 2.5
 
 
 # ─────────────────────────────────────────────────────────────
 # VIDEO / DISPLAY SETTINGS
 # ─────────────────────────────────────────────────────────────
 
-FRAME_WIDTH = 960
+FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
-FRAME_FPS = 30
+FRAME_FPS = 20
 
 
 # ─────────────────────────────────────────────────────────────
 # UI / OVERLAY COLORS (BGR)
 # ─────────────────────────────────────────────────────────────
 
-COLOR_OBJECT_BOX = (0, 255, 0)
-COLOR_FACE_BOX = (255, 200, 0)
-COLOR_GAZE_TEXT = (255, 255, 0)
+COLOR_OBJECT_BOX = {
+    "HIGH": (0, 0, 255),      # Red → dangerous (phone)
+    "MEDIUM": (0, 165, 255),  # Orange → suspicious (book/laptop)
+    "LOW": (0, 255, 255),     # Yellow → weak signal
+    "NORMAL": (0, 255, 0),    # Green → safe (person)
+}
+COLOR_FACE_BOX = (0, 255, 0)        # Green → normal face
 
-COLOR_ALERT = (0, 0, 255)
-COLOR_WARNING = (0, 165, 255)
-COLOR_INFO_TEXT = (255, 255, 255)
+# ───── GAZE ─────
+COLOR_GAZE_TEXT = (255, 255, 255)   # White → readable
+
+# ───── ALERT LEVELS ─────
+COLOR_ALERT = (0, 0, 255)           #  Red → HIGH RISK
+COLOR_WARNING = (0, 165, 255)       #  Orange → MEDIUM RISK
+COLOR_INFO_TEXT = (200, 200, 200)   # Light gray → neutral
 
 
 # ─────────────────────────────────────────────────────────────
@@ -182,7 +183,7 @@ COLOR_INFO_TEXT = (255, 255, 255)
 # ─────────────────────────────────────────────────────────────
 
 # Run heavy models every N frames
-MODEL_PROCESS_INTERVAL = 2
+MODEL_PROCESS_INTERVAL = 1
 
 # Camera buffer reduction
 CAMERA_BUFFER_SIZE = 1
