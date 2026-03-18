@@ -45,51 +45,51 @@
       /* AI Monitor Status Bar */
       .ai-monitor-status {
         position: fixed;
-        top: 70px;
-        right: 20px;
-        padding: 12px 18px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 14px;
-        z-index: 1999;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        animation: slideIn 0.3s ease-out;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 15px;
+        z-index: 9999;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: white;
+        pointer-events: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      @keyframes slideIn {
-        from {
-          transform: translateX(400px);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
+      @keyframes blink-active {
+        0% { opacity: 1; transform: translateX(-50%) scale(1); }
+        50% { opacity: 0.5; transform: translateX(-50%) scale(0.98); }
+        100% { opacity: 1; transform: translateX(-50%) scale(1); }
       }
 
       .status-active {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        color: white;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(185, 28, 28, 0.9) 100%);
+        animation: blink-active 1s infinite;
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
       }
 
       .status-warning {
         background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
-        color: white;
       }
 
       .status-processing {
         background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        color: white;
       }
 
       .status-complete {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
       }
 
       .status-error {
         background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
-        color: white;
       }
 
       .status-info {

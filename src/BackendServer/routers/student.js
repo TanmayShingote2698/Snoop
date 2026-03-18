@@ -13,17 +13,17 @@ require("dotenv").config();
 
 // Cloudinary Configuration
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'snoop_students',
-        allowed_formats: ['jpg', 'png', 'jpeg'],
-    },
+  cloudinary: cloudinary,
+  params: {
+    folder: 'snoop_students',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+  },
 });
 
 const upload = multer({ storage: storage });
@@ -47,38 +47,38 @@ let resultArr = [];
  * Handles string/number ID mismatches and auto-resyncs if not found.
  */
 async function getTestById(testID) {
-    const teacherModule = require("./teacher");
-    const liveTests = teacherModule.tests;
-    
-    const findInMemory = (id) => {
-        return liveTests.find(t => {
-            const details = t.test_details || t;
-            return String(details.id).trim() === String(id).trim();
-        });
-    };
+  const teacherModule = require("./teacher");
+  const liveTests = teacherModule.tests;
 
-    let test = findInMemory(testID);
-    if (test) return test.test_details || test;
-
-    console.log(`[getTestById] Test ${testID} not in memory. Syncing with DB...`);
-    
-    return new Promise((resolve) => {
-        const options = {
-            url: 'http://127.0.0.1:100/getAllTest',
-            json: true
-        };
-        request.post(options, (err, resp, body) => {
-            if (!err && body && Array.isArray(body)) {
-                liveTests.length = 0;
-                body.forEach(t => liveTests.push(t.test_details || t));
-                const found = findInMemory(testID);
-                resolve(found ? (found.test_details || found) : null);
-            } else {
-                console.error("[getTestById] DB Sync Failed:", err);
-                resolve(null);
-            }
-        });
+  const findInMemory = (id) => {
+    return liveTests.find(t => {
+      const details = t.test_details || t;
+      return String(details.id).trim() === String(id).trim();
     });
+  };
+
+  let test = findInMemory(testID);
+  if (test) return test.test_details || test;
+
+  console.log(`[getTestById] Test ${testID} not in memory. Syncing with DB...`);
+
+  return new Promise((resolve) => {
+    const options = {
+      url: 'http://127.0.0.1:100/getAllTest',
+      json: true
+    };
+    request.post(options, (err, resp, body) => {
+      if (!err && body && Array.isArray(body)) {
+        liveTests.length = 0;
+        body.forEach(t => liveTests.push(t.test_details || t));
+        const found = findInMemory(testID);
+        resolve(found ? (found.test_details || found) : null);
+      } else {
+        console.error("[getTestById] DB Sync Failed:", err);
+        resolve(null);
+      }
+    });
+  });
 }
 
 router.get("/login", checkNotAuthenticated, (req, res) => {
@@ -124,7 +124,7 @@ router.post("/login", async (req, res) => {
     // Set Session
     const userName = body['name'] || inputEmail.split('@')[0];
     const userPhoto = body['photo_url'] || '/public/default-avatar.png'; // Fallback if null
-    
+
     req.session.user = {
       role: 'student',
       email: inputEmail,
@@ -146,17 +146,17 @@ router.post("/login", async (req, res) => {
 
 // Direct Test Join Link
 router.get("/join/:testID", (req, res) => {
-    const testID = req.params.testID;
-    
-    if (!req.session.user) {
-        return res.redirect(`/student/login?returnTo=${encodeURIComponent('/student/join/' + testID)}`);
-    }
+  const testID = req.params.testID;
 
-    res.render("joinTest", {
-        testID,
-        email: req.session.user.email,
-        hideHome: true
-    });
+  if (!req.session.user) {
+    return res.redirect(`/student/login?returnTo=${encodeURIComponent('/student/join/' + testID)}`);
+  }
+
+  res.render("joinTest", {
+    testID,
+    email: req.session.user.email,
+    hideHome: true
+  });
 });
 
 router.get("/tp", (req, res) => {
@@ -221,11 +221,11 @@ router.get("/home", checkAuthenticated, (req, res) => {
   request.post(resultOptions, (err, resp, body) => {
     let results = [];
     if (!err && body && body.result) {
-        results = body.result;
+      results = body.result;
     } else if (err) {
-        console.error("Error fetching student results:", err);
+      console.error("Error fetching student results:", err);
     }
-    
+
     // Step 2: Fetch all tests to enrich history with dates/times
     const testOptions = {
       url: 'http://127.0.0.1:100/getAllTest',
@@ -233,106 +233,106 @@ router.get("/home", checkAuthenticated, (req, res) => {
     };
 
     request.post(testOptions, (errTest, respTest, bodyTest) => {
-        if (!errTest && bodyTest) {
-            // Merge test dates into results
-            results = results.map(r => {
-                const matchDetails = bodyTest.find(t => String(t.test_details.id) === String(r.test_id));
-                if (matchDetails) {
-                    const d = matchDetails.test_details;
-                    return {
-                        ...r,
-                        // Fix: map startTime to start_date and endTime to end_date
-                        // The frontend studentHome.ejs expects these specific keys
-                        start_date: d.startTime ? new Date(d.startTime).toLocaleString() : 'N/A',
-                        end_date: d.endTime ? new Date(d.endTime).toLocaleString() : 'N/A'
-                    };
-                }
-                return r;
-            });
-        }
-
-        res.render("studentHome", { 
-            email, 
-            name,
-            hideHome: true,
-            results: results
+      if (!errTest && bodyTest) {
+        // Merge test dates into results
+        results = results.map(r => {
+          const matchDetails = bodyTest.find(t => String(t.test_details.id) === String(r.test_id));
+          if (matchDetails) {
+            const d = matchDetails.test_details;
+            return {
+              ...r,
+              // Fix: map startTime to start_date and endTime to end_date
+              // The frontend studentHome.ejs expects these specific keys
+              start_date: d.startTime ? new Date(d.startTime).toLocaleString() : 'N/A',
+              end_date: d.endTime ? new Date(d.endTime).toLocaleString() : 'N/A'
+            };
+          }
+          return r;
         });
+      }
+
+      res.render("studentHome", {
+        email,
+        name,
+        hideHome: true,
+        results: results
+      });
     });
   });
 });
 
 // Profile Routes
 router.get("/profile", checkAuthenticated, (req, res) => {
-    res.render("profile", {
-        user: req.session.user,
-        hideHome: true,
-        currentPage: 'profile'
-    });
+  res.render("profile", {
+    user: req.session.user,
+    hideHome: true,
+    currentPage: 'profile'
+  });
 });
 
 router.post("/profile", checkAuthenticated, upload.single('photo'), (req, res) => {
-    let photoUrl = req.file ? req.file.path : req.session.user.photo_url;
-    let newName = req.body.name || req.session.user.name;
+  let photoUrl = req.file ? req.file.path : req.session.user.photo_url;
+  let newName = req.body.name || req.session.user.name;
 
-    const options = {
-        url: 'http://127.0.0.1:300/updateProfile',
-        json: true,
-        body: {
-            email: req.session.user.email,
-            role: req.session.user.role,
-            name: newName,
-            photo_url: photoUrl
-        }
-    };
+  const options = {
+    url: 'http://127.0.0.1:300/updateProfile',
+    json: true,
+    body: {
+      email: req.session.user.email,
+      role: req.session.user.role,
+      name: newName,
+      photo_url: photoUrl
+    }
+  };
 
-    request.post(options, (err, resp, body) => {
-        if (!err && body && body.status) {
-            req.session.user.name = newName;
-            req.session.user.photo_url = photoUrl;
-            res.redirect("/student/profile?success=" + encodeURIComponent("Profile updated successfully."));
-        } else {
-            console.error("Profile update error:", err || body);
-            res.redirect("/student/profile?error=" + encodeURIComponent("Failed to update profile."));
-        }
-    });
+  request.post(options, (err, resp, body) => {
+    if (!err && body && body.status) {
+      req.session.user.name = newName;
+      req.session.user.photo_url = photoUrl;
+      res.redirect("/student/profile?success=" + encodeURIComponent("Profile updated successfully."));
+    } else {
+      console.error("Profile update error:", err || body);
+      res.redirect("/student/profile?error=" + encodeURIComponent("Failed to update profile."));
+    }
+  });
 });
 
 // Security Routes
 router.get("/security", checkAuthenticated, (req, res) => {
-    res.render("security", {
-        user: req.session.user,
-        hideHome: true,
-        currentPage: 'security'
-    });
+  res.render("security", {
+    user: req.session.user,
+    hideHome: true,
+    currentPage: 'security'
+  });
 });
 
 router.post("/security", checkAuthenticated, (req, res) => {
-    const { currentPassword, newPassword, confirmPassword } = req.body;
-    
-    if (newPassword !== confirmPassword) {
-        return res.redirect("/student/security?error=" + encodeURIComponent("New passwords do not match."));
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  if (newPassword !== confirmPassword) {
+    return res.redirect("/student/security?error=" + encodeURIComponent("New passwords do not match."));
+  }
+
+  const options = {
+    url: 'http://127.0.0.1:300/changePassword',
+    json: true,
+    body: {
+      email: req.session.user.email,
+      role: req.session.user.role,
+      currentPassword: currentPassword,
+      newPassword: newPassword
     }
+  };
 
-    const options = {
-        url: 'http://127.0.0.1:300/changePassword',
-        json: true,
-        body: {
-            email: req.session.user.email,
-            role: req.session.user.role,
-            currentPassword: currentPassword,
-            newPassword: newPassword
-        }
-    };
-
-    request.post(options, (err, resp, body) => {
-        if (!err && body && body.status) {
-            res.redirect("/student/security?success=" + encodeURIComponent("Password changed successfully."));
-        } else {
-            console.error("Password change error:", err || body);
-            let errMsg = body && body.message ? body.message : "Failed to change password. Ensure current password is correct.";
-            res.redirect("/student/security?error=" + encodeURIComponent(errMsg));
-        }
-    });
+  request.post(options, (err, resp, body) => {
+    if (!err && body && body.status) {
+      res.redirect("/student/security?success=" + encodeURIComponent("Password changed successfully."));
+    } else {
+      console.error("Password change error:", err || body);
+      let errMsg = body && body.message ? body.message : "Failed to change password. Ensure current password is correct.";
+      res.redirect("/student/security?error=" + encodeURIComponent(errMsg));
+    }
+  });
 });
 
 // Show all tests to student
@@ -473,33 +473,33 @@ router.post("/takeTest", checkAuthenticated, (req, res) => {
 
   // --- TIME WINDOW VALIDATION (START) ---
   if (test.startTime && test.endTime) {
-      const now = new Date();
-      const start = new Date(test.startTime);
-      const end = new Date(test.endTime);
+    const now = new Date();
+    const start = new Date(test.startTime);
+    const end = new Date(test.endTime);
 
-      if (now < start) {
-          return res.redirect("/student/home?error=" + encodeURIComponent(`Test has not started yet. Starts at: ${start.toLocaleString()}`));
-      }
-      
-      if (now > end) {
-          return res.redirect("/student/home?error=" + encodeURIComponent("Test has expired. Access denied."));
-      }
+    if (now < start) {
+      return res.redirect("/student/home?error=" + encodeURIComponent(`Test has not started yet. Starts at: ${start.toLocaleString()}`));
+    }
+
+    if (now > end) {
+      return res.redirect("/student/home?error=" + encodeURIComponent("Test has expired. Access denied."));
+    }
   }
   // --- TIME WINDOW VALIDATION (END) ---
 
-    // res.render("testInstructions", {    <-- OLD
-    //   test,
-    //   email: req.body.email,
-    //   hideHome: true
-    // });
-    
-    // NEW FLOW: Render Instructions First
-    res.render("testInstructions", {
-      test,
-      email: req.body.email || req.session.user.email,
-      hideHome: true,
-      isolateTest: true
-    });
+  // res.render("testInstructions", {    <-- OLD
+  //   test,
+  //   email: req.body.email,
+  //   hideHome: true
+  // });
+
+  // NEW FLOW: Render Instructions First
+  res.render("testInstructions", {
+    test,
+    email: req.body.email || req.session.user.email,
+    hideHome: true,
+    isolateTest: true
+  });
 });
 
 // NEW ROUTE: System Check (Called from Instructions page)
@@ -540,7 +540,7 @@ router.post("/startExam", checkAuthenticated, async (req, res) => {
 
 // Handle reload (GET /startExam) -> Redirect to home (prevents "Cannot GET" error)
 router.get("/startExam", (req, res) => {
-    return res.redirect("/student/home?error=" + encodeURIComponent("Test session terminated due to page reload."));
+  return res.redirect("/student/home?error=" + encodeURIComponent("Test session terminated due to page reload."));
 });
 
 // Route for accepting test responses from students
@@ -564,20 +564,13 @@ router.post('/submitTest', (req, res) => {
   responseOfStudent.studentEmail = req.body.email;
   let qna = [];
   for (let i = 0; i < test.questions.length; i++) {
-    let obj = {};
-    let pos = (i + 1).toString();
-    obj.ind = i + 1;
-    obj.studentAnswer = req.body[pos];
-    for (let j = 0; j < test.questions.length; j++) {
-      if (i + 1 === test.questions[j].ind) {
-        if (test.questions[j].op1 !== undefined) {
-          obj.actualAnswer = test.questions[j].answer;
-        }
-        else {
-          obj.actualAnswer = "This is a sbjective question";
-        }
-      }
-    }
+    let q = test.questions[i];
+    let q_id = q.ind.toString();
+    let obj = {
+      ind: q.ind,
+      studentAnswer: req.body[q_id] || "",
+      actualAnswer: q.op1 !== undefined ? q.answer : "This is a sbjective question"
+    };
     qna.push(obj);
   }
   responseOfStudent.qna = qna;
@@ -586,23 +579,23 @@ router.post('/submitTest', (req, res) => {
   const tabViolations = req.body.tabSwitchData ? JSON.parse(req.body.tabSwitchData) : [];
   const fsViolations = req.body.fullscreenData ? JSON.parse(req.body.fullscreenData) : [];
   const instantViolations = req.body.actionLogs ? JSON.parse(req.body.actionLogs) : [];
-  
+
   let integrityScore = 100;
-  
+
   // Deduct 10 points per tab switch
-  integrityScore -= (tabViolations.length * 10); 
+  integrityScore -= (tabViolations.length * 10);
   // Deduct 15 points per fullscreen exit (harsher penalty)
-  integrityScore -= (fsViolations.length * 15); 
+  integrityScore -= (fsViolations.length * 15);
   // Deduct 5 points per restricted key strike or mouse exit
   integrityScore -= (instantViolations.length * 5);
-  
+
   if (integrityScore < 0) integrityScore = 0;
 
   // Parse AI Monitoring Data
   let aiCheatScore = 0;
   let anomalyData = [];
   let monitoringStats = {};
-  
+
   try {
     aiCheatScore = parseFloat(req.body.cheatScore) || 0;
     anomalyData = req.body.anomalyData ? JSON.parse(req.body.anomalyData) : [];
@@ -623,32 +616,32 @@ router.post('/submitTest', (req, res) => {
 
   const options = {
     url: 'http://127.0.0.1:200/' + 'scoreAndStore',
-      json: true,
-      body: {
-        'response': {
-          "testID": responseOfStudent.testID,
-          "studentEmail": responseOfStudent.studentEmail,
-          "qna": responseOfStudent.qna,
-          "integrity": integrityScore,
-          "cheatScore": aiCheatScore,
-          "combinedCheatScore": combinedCheatScore,
-          "anomalyData": anomalyData,
-          "monitoringStats": monitoringStats,
-          "tabSwitchData": tabViolations,
-          "fullscreenData": fsViolations,
-          "actionLogs": instantViolations
-        }
+    json: true,
+    body: {
+      'response': {
+        "testID": responseOfStudent.testID,
+        "studentEmail": responseOfStudent.studentEmail,
+        "qna": responseOfStudent.qna,
+        "integrity": integrityScore,
+        "cheatScore": aiCheatScore,
+        "combinedCheatScore": combinedCheatScore,
+        "anomalyData": anomalyData,
+        "monitoringStats": monitoringStats,
+        "tabSwitchData": tabViolations,
+        "fullscreenData": fsViolations,
+        "actionLogs": instantViolations
       }
-    };
+    }
+  };
 
-    request.post(options, (err, resp, body) => {
-      if (err) {
-        console.error("Error storing test results:", err);
-        return res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&error=" + encodeURIComponent("Error submitting test. Please try again."));
-      }
-      res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&success=" + encodeURIComponent("Examination submitted successfully! Check your results below."));
-    });
+  request.post(options, (err, resp, body) => {
+    if (err) {
+      console.error("Error storing test results:", err);
+      return res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&error=" + encodeURIComponent("Error submitting test. Please try again."));
+    }
+    res.redirect("/student/home?email=" + encodeURIComponent(responseOfStudent.studentEmail) + "&success=" + encodeURIComponent("Examination submitted successfully! Check your results below."));
   });
+});
 
 
 router.get('/GetResultByEmail', (req, res) => {

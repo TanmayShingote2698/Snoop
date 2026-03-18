@@ -174,15 +174,15 @@ class scoreAndStore(Resource):
         else:
             s_id = None # Fallback
             
-        mcq_score = 0 # Initialize to 0, will be incremented
-        final_score=mcq_score+random.randint(1,5)
-        generated=False
-        answers=[]
+        mcq_score = 0 
+        final_score = 0
+        generated = False
+        answers = []
         integrity = response.get("integrity", random.randint(1, 100))
         tab_switch_data = response.get("tabSwitchData", []) 
-        fullscreen_data = response.get("fullscreenData", []) # Extract fullscreen logs
-        action_logs = response.get("actionLogs", []) # Extract granular logs
-        subjective_score=random.randint(1,20)
+        fullscreen_data = response.get("fullscreenData", []) 
+        action_logs = response.get("actionLogs", []) 
+        subjective_score = random.randint(1, 20)
         
         # Extract AI Monitoring Data
         cheat_score = float(response.get("cheatScore", 0))
@@ -195,17 +195,24 @@ class scoreAndStore(Resource):
         risk_level = calculate_risk_level(combined_score)
         
         qna = response["qna"]
-        print("=======================================")
+        print("--- SCORING TRACE ---")
         for q in qna:
-            print(f"q:{q}")
-            print(f"qActual:{q['actualAnswer']}")
-            print(f"qStudent:{q['studentAnswer']}")
+            student_ans = str(q.get("studentAnswer", "")).strip().lower()
+            actual_ans = str(q.get("actualAnswer", "")).strip().lower()
+            
+            if actual_ans != "this is a sbjective question":
+                if student_ans == actual_ans:
+                    mcq_score += 1
+                    print(f"  Q{q['ind']}: MATCH (Student: '{student_ans}', Actual: '{actual_ans}')")
+                else:
+                    print(f"  Q{q['ind']}: MISMATCH (Student: '{student_ans}', Actual: '{actual_ans}')")
+            else:
+                print(f"  Q{q['ind']}: Subjective - Skipping")
+                
+            answers.append(q.get("studentAnswer", ""))
 
-            if(q["actualAnswer"]!="This is a sbjective question"):
-                if(q["actualAnswer"]==q["studentAnswer"]):
-                    mcq_score = mcq_score +1
-            answers.append(q["studentAnswer"])
-        print("================================================")
+        final_score = mcq_score + subjective_score
+        print(f"--- TOTALS: MCQ={mcq_score}, Subjective={subjective_score}, Final={final_score} ---")
         
         jsondata = {
                 'student_id': int(s_id) if s_id and s_id != 0 else None,  # Can be NULL
