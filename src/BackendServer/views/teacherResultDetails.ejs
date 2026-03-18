@@ -1,12 +1,15 @@
 <div class="row mb-4 align-items-center" style="margin-top: 5px;">
-    <div class="col-md-8">
+    <div class="col-md-7">
         <h2 class="font-weight-bold p-0 m-0" style="color: var(--text-base);">
             <i class="fas fa-chart-bar mr-2" style="color: var(--secondary);"></i>
             Test Results Analytics
         </h2>
         <p class="text-dim mt-2 mb-0">Test ID: <strong style="color: var(--text-base);"><%= testID %></strong></p>
     </div>
-    <div class="col-md-4 text-md-right mt-3 mt-md-0">
+    <div class="col-md-5 text-md-right mt-3 mt-md-0 d-flex justify-content-md-end">
+        <button onclick="window.location.reload()" class="btn-snoop btn-glass mr-2" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: var(--primary);">
+            <i class="fas fa-sync-alt mr-2"></i> Refresh
+        </button>
         <a href="/teacher/showAllTests?filter=completed" class="btn-snoop btn-glass">
             <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
         </a>
@@ -21,14 +24,14 @@
                     <table class="table table-hover table-borderless mb-0" style="background: transparent; color: var(--text-base);">
                         <thead style="border-bottom: 2px solid var(--glass-border);">
                             <tr>
-                                <th scope="col" class="font-weight-bold text-dim pb-3">Student Email</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Score</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Integrity</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">AI Cheat Score</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Combined</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Risk Level</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Monitoring</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-3 text-center">Details</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2" style="font-size: 0.85rem; white-space: nowrap;">Student Email</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Score</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Integrity</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">AI Score</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Combined</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Risk</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Monitor</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -55,46 +58,46 @@
                                     }
                                 %>
                                 <tr class="snoop-table-row" style="border-bottom: 1px solid var(--glass-border); transition: background 0.3s; cursor: default;">
-                                    <td class="align-middle py-3">
+                                    <td class="align-middle py-1">
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar-circle mr-3" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                                            <div class="avatar-circle mr-2" style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
                                                 <%= r.email.substring(0, 1).toUpperCase() %>
                                             </div>
                                             <div>
-                                                <h6 class="mb-0 font-weight-bold" style="color: var(--text-base);"><%= r.email %></h6>
-                                                <small class="text-dim">ID: <%= r.student_id %></small>
+                                                <div class="mb-0 font-weight-bold" style="color: var(--text-base); font-size: 0.85rem;"><%= r.email %></div>
+                                                <div class="text-dim" style="font-size: 0.7rem; line-height: 1;">ID: <%= r.student_id %></div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="align-middle text-center py-3">
-                                        <span class="fs-5 font-weight-bold" style="color: var(--secondary);"><%= r.final_score %></span>
+                                    <td class="align-middle text-center py-1">
+                                        <span class="font-weight-bold" style="color: var(--secondary); font-size: 1rem;"><%= r.mcq_score %></span>
                                     </td>
-                                    <td class="align-middle text-center py-3">
-                                        <span class="badge badge-pill px-3 py-2" style="background: <%= integrityColor %>33; color: <%= integrityColor %>; border: 1px solid <%= integrityColor %>44; font-size: 0.85rem;">
+                                    <td class="align-middle text-center py-1">
+                                        <span class="badge badge-pill px-2 py-1" style="background: <%= integrityColor %>33; color: <%= integrityColor %>; border: 1px solid <%= integrityColor %>44; font-size: 0.75rem;">
                                             <%= r.integrity %>%
                                         </span>
                                     </td>
-                                    <td class="align-middle text-center py-3">
+                                    <td class="align-middle text-center py-1">
                                         <% if (r.monitoring_enabled) { %>
-                                            <span class="badge badge-pill px-3 py-2" style="background: <%= (r.cheat_score > 60 ? '#ef4444' : r.cheat_score > 40 ? '#fbbf24' : '#34d399') %>33; color: <%= (r.cheat_score > 60 ? '#ef4444' : r.cheat_score > 40 ? '#fbbf24' : '#34d399') %>; border: 1px solid <%= (r.cheat_score > 60 ? '#ef4444' : r.cheat_score > 40 ? '#fbbf24' : '#34d399') %>44; font-size: 0.85rem;">
+                                            <span class="badge badge-pill px-2 py-1" style="background: <%= (r.cheat_score > 60 ? '#ef4444' : r.cheat_score > 40 ? '#fbbf24' : '#34d399') %>33; color: <%= (r.cheat_score > 60 ? '#ef4444' : r.cheat_score > 40 ? '#fbbf24' : '#34d399') %>; border: 1px solid <%= (r.cheat_score > 60 ? '#ef4444' : r.cheat_score > 40 ? '#fbbf24' : '#34d399') %>44; font-size: 0.75rem;">
                                                 <%= r.cheat_score.toFixed(1) %>
                                             </span>
                                         <% } else { %>
-                                            <span class="text-dim text-center" style="font-size: 0.9rem;">N/A</span>
+                                            <span class="text-dim text-center" style="font-size: 0.75rem;">N/A</span>
                                         <% } %>
                                     </td>
-                                    <td class="align-middle text-center py-3">
+                                    <td class="align-middle text-center py-1">
                                         <% if (r.monitoring_enabled) { %>
-                                            <span class="badge badge-pill px-3 py-2" style="background: <%= riskBg %>; color: <%= riskColor %>; border: 1px solid <%= riskColor %>44; font-size: 0.85rem; font-weight: bold;">
+                                            <span class="badge badge-pill px-2 py-1" style="background: <%= riskBg %>; color: <%= riskColor %>; border: 1px solid <%= riskColor %>44; font-size: 0.75rem; font-weight: bold;">
                                                 <%= r.combined_score.toFixed(1) %>
                                             </span>
                                         <% } else { %>
-                                            <span class="text-dim text-center" style="font-size: 0.9rem;">N/A</span>
+                                            <span class="text-dim text-center" style="font-size: 0.75rem;">N/A</span>
                                         <% } %>
                                     </td>
-                                    <td class="align-middle text-center py-3">
+                                    <td class="align-middle text-center py-1">
                                         <% if (r.monitoring_enabled) { %>
-                                            <span class="badge px-3 py-2" style="background: <%= riskBg %>; color: <%= riskColor %>; border: 1px solid <%= riskColor %>44; font-weight: bold; font-size: 0.85rem;">
+                                            <span class="badge px-2 py-1" style="background: <%= riskBg %>; color: <%= riskColor %>; border: 1px solid <%= riskColor %>44; font-weight: bold; font-size: 0.75rem; white-space: nowrap;">
                                                 <% 
                                                     let riskIcon = '🟢';
                                                     if (r.risk_level === 'MODERATE') riskIcon = '🔵';
@@ -105,28 +108,34 @@
                                                 <%= riskIcon %> <%= r.risk_level %>
                                             </span>
                                         <% } else { %>
-                                            <span class="text-dim text-center" style="font-size: 0.9rem;">N/A</span>
+                                            <span class="text-dim text-center" style="font-size: 0.75rem;">N/A</span>
                                         <% } %>
                                     </td>
-                                    <td class="align-middle text-center py-3">
+                                    <td class="align-middle text-center py-1">
                                         <% if (r.monitoring_enabled) { %>
-                                            <span class="badge badge-success px-2 py-1" style="font-size: 0.8rem;">
-                                                <i class="fas fa-camera mr-1"></i>Active
+                                            <span class="badge badge-success px-2 py-1" style="font-size: 0.7rem;">
+                                                <i class="fas fa-camera mr-1"></i>On
                                             </span>
                                         <% } else { %>
-                                            <span class="badge badge-secondary px-2 py-1" style="font-size: 0.8rem;">
-                                                <i class="fas fa-ban mr-1"></i>Inactive
+                                            <span class="badge badge-secondary px-2 py-1" style="font-size: 0.7rem;">
+                                                <i class="fas fa-ban mr-1"></i>Off
                                             </span>
                                         <% } %>
                                     </td>
-                                    <td class="align-middle text-center py-3">
-                                        <% if (r.monitoring_enabled && r.anomaly_data && r.anomaly_data.length > 0) { %>
-                                            <button class="btn btn-sm btn-outline-info" onclick="toggleAnomalyDetails(<%= idx %>)" style="border-color: var(--primary); color: var(--primary);">
-                                                <i class="fas fa-eye mr-1"></i><%= r.anomaly_data.length %> Anomalies
+                                    <td class="align-middle text-center py-1">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <% if (r.monitoring_enabled && r.anomaly_data && r.anomaly_data.length > 0) { %>
+                                                <button class="btn btn-sm btn-outline-info mb-1" onclick="toggleAnomalyDetails(<%= idx %>)" style="border-color: var(--primary); color: var(--primary); min-width: 100px; padding: 4px 5px; font-size: 0.75rem; border-radius: 6px; font-weight: bold;">
+                                                    <i class="fas fa-eye mr-1"></i><%= r.anomaly_data.length %> Alerts
+                                                </button>
+                                            <% } %>
+                                            <button class="btn btn-sm font-weight-bold px-2 view-answers-btn" 
+                                                    data-email="<%= r.email %>" 
+                                                    data-answers="<%= encodeURIComponent(JSON.stringify(r.answers)) %>"
+                                                    style="border: none; border-radius: 6px; color: white; background: linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow: 0 2px 5px rgba(212,16,170,0.3); min-width: 100px; padding-top: 5px; padding-bottom: 5px; font-size: 0.75rem;">
+                                                <i class="fas fa-tasks mr-1"></i> Answers
                                             </button>
-                                        <% } else { %>
-                                            <span class="text-dim" style="font-size: 0.9rem;">—</span>
-                                        <% } %>
+                                        </div>
                                     </td>
                                 </tr>
                                 <!-- Anomaly Details Row -->
@@ -170,7 +179,36 @@
     </div>
 </div>
 
+  <!-- Answer Modal -->
+  <div class="modal fade" id="answerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--glass-border); backdrop-filter: blur(20px); border-radius: 15px;">
+        <div class="modal-header border-0 pb-2">
+          <div class="d-flex align-items-center">
+            <img id="modalStudentImage" src="" alt="Student Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-right: 15px;">
+            <h5 class="modal-title font-weight-bold mb-0" style="color: var(--text-base);">
+              Submission Details: <span id="modalStudentEmail" style="color: var(--primary); font-size: 0.9em;"></span>
+            </h5>
+          </div>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: var(--text-dim); padding: 1rem 1rem 0 0; margin: -1rem -1rem -1rem auto;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4">
+            <div id="modalQuestionsContainer" style="max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+                <!-- Questions will be injected here -->
+            </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn-snoop btn-glass px-4" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
+    const testQuestions = <%- JSON.stringify(testQuestions || []) %>;
+
     function toggleAnomalyDetails(idx) {
         const detailsRow = document.getElementById('details-' + idx);
         if (detailsRow) {
@@ -181,6 +219,86 @@
             }
         }
     }
+
+    function showAnswerModal(email, studentAnswers) {
+        document.getElementById('modalStudentEmail').innerText = email;
+        const namePart = email.split('@')[0];
+        document.getElementById('modalStudentImage').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(namePart)}&background=random&color=fff&size=128`;
+        
+        const container = document.getElementById('modalQuestionsContainer');
+        container.innerHTML = '';
+
+        testQuestions.forEach((q, index) => {
+            const studentAns = studentAnswers[index] || "No Answer";
+            
+            // Resolve actual answer text same as backend
+            let actualValue = q.answer;
+            if (q["op" + q.answer]) {
+                actualValue = q["op" + q.answer];
+            } else if (q[q.answer]) {
+                actualValue = q[q.answer];
+            } else if (/^\d+$/.test(q.answer)) {
+                let key = "op" + q.answer;
+                if (q[key]) actualValue = q[key];
+            }
+            
+            const actualAns = actualValue;
+            const isCorrect = studentAns.toLowerCase().trim() === actualAns.toLowerCase().trim();
+
+            const qCard = document.createElement('div');
+            qCard.className = 'glass-card mb-2 p-2';
+            qCard.style.borderLeft = `3px solid ${isCorrect ? '#10b981' : '#ef4444'}`;
+            qCard.style.background = 'rgba(255, 255, 255, 0.02)';
+
+            let optionsHtml = '';
+            if (q.op1) {
+                optionsHtml = `
+                    <div class="row small mt-1" style="font-size: 0.8em; line-height: 1.2;">
+                        <div class="col-6 mb-1 ${actualAns === q.op1 ? 'text-success font-weight-bold' : 'text-dim'}">A) ${q.op1}</div>
+                        <div class="col-6 mb-1 ${actualAns === q.op2 ? 'text-success font-weight-bold' : 'text-dim'}">B) ${q.op2}</div>
+                        <div class="col-6 mb-1 ${actualAns === q.op3 ? 'text-success font-weight-bold' : 'text-dim'}">C) ${q.op3}</div>
+                        <div class="col-6 mb-1 ${actualAns === q.op4 ? 'text-success font-weight-bold' : 'text-dim'}">D) ${q.op4}</div>
+                    </div>
+                `;
+            }
+
+            qCard.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <h6 class="font-weight-bold mb-0" style="font-size: 0.85em; max-width: 85%;">Q${index + 1}: ${q.question}</h6>
+                    <span class="badge ${isCorrect ? 'badge-success' : 'badge-danger'}" style="font-size: 0.65em; padding: 3px 6px;">
+                        ${isCorrect ? 'CORRECT' : 'INCORRECT'}
+                    </span>
+                </div>
+                ${optionsHtml}
+                <div class="mt-1 pt-1 border-top" style="border-color: rgba(255,255,255,0.05) !important;">
+                    <div class="d-flex justify-content-between align-items-center" style="font-size: 0.8em;">
+                        <div>
+                            <span class="text-dim">Student:</span> 
+                            <span class="${isCorrect ? 'text-success' : 'text-danger'} font-weight-bold">${studentAns}</span>
+                        </div>
+                        ${!isCorrect ? `
+                        <div>
+                            <span class="text-dim">Correct:</span> 
+                            <span class="text-success font-weight-bold">${actualAns}</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
+            container.appendChild(qCard);
+        });
+
+        $('#answerModal').modal('show');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.view-answers-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const email = this.getAttribute('data-email');
+                const answers = JSON.parse(decodeURIComponent(this.getAttribute('data-answers')));
+                showAnswerModal(email, answers);
+            });
+        });
+    });
 </script>
 
 <style>

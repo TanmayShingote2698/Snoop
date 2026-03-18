@@ -251,11 +251,17 @@ router.get("/home", checkAuthenticated, (req, res) => {
         });
       }
 
+      let allTests = [];
+      if (!errTest && bodyTest && Array.isArray(bodyTest)) {
+          allTests = bodyTest.map(t => t.test_details);
+      }
+
       res.render("studentHome", {
         email,
         name,
         hideHome: true,
-        results: results
+        results: results,
+        allTests: allTests
       });
     });
   });
@@ -566,10 +572,22 @@ router.post('/submitTest', (req, res) => {
   for (let i = 0; i < test.questions.length; i++) {
     let q = test.questions[i];
     let q_id = q.ind.toString();
+    let actualAns = q.answer;
+    // Handle cases where answer is "op1", "op2" OR just "1", "2"
+    if (q["op" + q.answer]) {
+      actualAns = q["op" + q.answer];
+    } else if (q[q.answer]) {
+      actualAns = q[q.answer]; // Handles "op1" key if it exists
+    } else if (/^\d+$/.test(q.answer)) {
+      // Handles numeric index "1", "2"...
+      let key = "op" + q.answer;
+      if (q[key]) actualAns = q[key];
+    }
+
     let obj = {
       ind: q.ind,
       studentAnswer: req.body[q_id] || "",
-      actualAnswer: q.op1 !== undefined ? q.answer : "This is a sbjective question"
+      actualAnswer: actualAns
     };
     qna.push(obj);
   }
@@ -667,15 +685,27 @@ router.post('/GetResultByEmail', (req, res) => {
     }
     console.log("Body!:")
     console.log(body);
+    
+    // Also fetch all tests to provide question metadata for the modal
+    const testOptions = {
+        url: 'http://127.0.0.1:100/getAllTest',
+        json: true
+    };
 
-    res.render('showResultUsingEmail', {
-      results: body.result,
-      hideHome: true
-    })
+    request.post(testOptions, (tErr, tResp, tBody) => {
+        let allTests = [];
+        if (!tErr && tBody && Array.isArray(tBody)) {
+            allTests = tBody.map(row => row.test_details);
+        }
+
+        res.render('showResultUsingEmail', {
+            results: body.result,
+            allTests: allTests, // Pass all tests to resolve questions
+            hideHome: true
+        });
+    });
   });
-
-
-})
+});
 
 router.get("/logout", (req, res) => {
   req.session.destroy((err) => {

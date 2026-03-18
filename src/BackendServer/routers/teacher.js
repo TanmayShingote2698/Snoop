@@ -103,15 +103,6 @@ router.post("/submitQues", (req, res) => {
                 };
                 tests[i].questions.push(questionObj);
                 console.log(`   ✅ Pushed MCQ to tests[${i}].questions`);
-            } else {
-                const questionObj = {
-                    question: String(req.body.question || ''),
-                    answer: String(req.body.answer || ''),
-                    type: 'subjective',
-                    ind: tests[i].questions.length + 1,
-                };
-                tests[i].questions.push(questionObj);
-                console.log(`   ✅ Pushed Subjective to tests[${i}].questions`);
             }
             questions = tests[i].questions;
             questionAdded = true;
@@ -904,22 +895,28 @@ router.get("/showAllTests", checkAuthenticated, (req, res) => {
             });
         }
         
+        let dbTests = [...tests]; // Fallback to memory tests
+        
         try {
             // body is array of { test_details: {...} }
-            // We map it to array of {...} for the view
+            // We map it to array of {...} for the view without overwriting memory
             if (body && Array.isArray(body)) {
-                 // Update array in-place to preserve reference for other modules
-                 tests.length = 0;
-                 body.forEach(row => tests.push(row.test_details));
-                 console.log(`Synced ${tests.length} tests from DB.`);
+                 dbTests = body.map(row => row.test_details);
+                 console.log(`Fetched ${dbTests.length} tests from DB for display.`);
             }
         } catch (e) {
             console.log("Error parsing DB response:", e);
         }
 
-        // RBAC: Filter tests to show only those created by the logged-in teacher (or legacy tests with no creator)
         const userEmail = req.session.user.email;
-        let myTests = tests.filter(t => !t.created_by || t.created_by === userEmail); 
+        // RBAC: Filter tests to show only those created by the logged-in teacher (or legacy tests with no creator)
+        let myTests = dbTests.filter(t => !t.created_by || t.created_by === userEmail); 
+        // Sort tests by ID descending to show latest on top
+        myTests.sort((a, b) => {
+            const idA = parseInt(a.id) || 0;
+            const idB = parseInt(b.id) || 0;
+            return idB - idA;
+        });
         
         // Apply status filter if provided (upcoming, ongoing, completed)
         const filter = req.query.filter;
@@ -1051,11 +1048,31 @@ router.post("/resultDetails", checkAuthenticated, (req, res) => {
             });
         }
         
-        res.render("teacherResultDetails", {
-            testID: testID,
-            results: resultsData,
-            hideHome: true,
-            currentPage: 'results'
+        // Fetch Test Details from DB to get Questions for the modal
+        const testOptions = {
+            url: 'http://127.0.0.1:100/getTest',
+            json: true,
+            body: {
+                'test_id': testID
+            }
+        };
+        
+        request.post(testOptions, (errTest, respTest, bodyTest) => {
+            let testQuestions = [];
+            if (!errTest && bodyTest && bodyTest.test_details) {
+                testQuestions = bodyTest.test_details.questions || [];
+            } else if (!errTest && bodyTest) {
+                // Handle different DB structure formats just in case
+                testQuestions = bodyTest.questions || [];
+            }
+            
+            res.render("teacherResultDetails", {
+                testID: testID,
+                results: resultsData,
+                testQuestions: testQuestions,
+                hideHome: true,
+                currentPage: 'results'
+            });
         });
     });
 });
@@ -1117,11 +1134,6 @@ router.post("/uploadQuestions", checkAuthenticated, localUpload.single('file'), 
                     test.questions.push(newQ);
                     addedCount++;
                 }
-            } else if (qType === 'subjective') {
-                newQ.type = 'subjective';
-                newQ.answer = safeString(row.answer);
-                test.questions.push(newQ);
-                addedCount++;
             }
         });
 
