@@ -12,9 +12,6 @@
         <button class="btn-snoop mr-3" id="mcq">
           <i class="fas fa-list-check mr-2"></i> MCQ
         </button>
-        <button class="btn-snoop mr-3" id="subjective">
-          <i class="fas fa-align-left mr-2"></i> Subjective
-        </button>
         <button class="btn-snoop mr-3" id="bulk">
           <i class="fas fa-file-upload mr-2"></i> Bulk Upload
         </button>
@@ -29,12 +26,11 @@
           <h5 class="alert-heading"><i class="fas fa-info-circle mr-2"></i>Instructions for Bulk Upload</h5>
           <p class="mb-2">Upload an Excel (.xlsx) or CSV file with the following columns (headers are required):</p>
           <ul class="small mb-3">
-            <li><strong>type</strong>: 'mcq' or 'subjective' (required)</li>
+            <li><strong>type</strong>: 'mcq' (required)</li>
             <li><strong>question</strong>: The question text (required)</li>
-            <li><strong>op1, op2, op3, op4</strong>: Options for MCQ (required for type 'mcq')</li>
-            <li><strong>answer</strong>: Correct option number (1-4) for MCQ (required for type 'mcq')</li>
+            <li><strong>op1, op2, op3, op4</strong>: Options for MCQ (required)</li>
+            <li><strong>answer</strong>: Correct option number (1-4) (required)</li>
           </ul>
-          <p class="mb-0 small"><em>Note: Subjective questions only need 'type' and 'question' columns.</em></p>
           <div class="mt-3">
             <a href="/sample_questions.csv" download class="btn-snoop btn-sm" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
               <i class="fas fa-download mr-2"></i> Download Sample CSV
@@ -83,17 +79,6 @@
         </button>
       </form>
 
-      <!-- Subjective Form -->
-      <form id="subform" style="display: none" action="/teacher/submitQues" method="POST" class="mt-4 text-left">
-        <input type="hidden" name="testID" value="<%= testIDfromNode %>">
-        <div class="form-group">
-          <label>Subjective Question Statement</label>
-          <textarea class="form-control" name="question" rows="3" placeholder="Enter subjective question"></textarea>
-        </div>
-        <button type="submit" class="btn-snoop mt-3">
-          Submit Subjective Question <i class="fas fa-plus ml-2"></i>
-        </button>
-      </form>
 
       <!-- AI Generation Form -->
       <form id="aiform" style="display: none" class="mt-4 text-left">
@@ -130,11 +115,6 @@
                    name="questionTypes" value="mcq" checked>
             <label class="custom-control-label" for="aiMCQ">Multiple Choice (MCQ)</label>
           </div>
-          <div class="custom-control custom-checkbox">
-            <input type="checkbox" class="custom-control-input" id="aiSubjective" 
-                   name="questionTypes" value="subjective">
-            <label class="custom-control-label" for="aiSubjective">Subjective Questions</label>
-          </div>
         </div>
 
         <div class="form-group">
@@ -167,7 +147,7 @@
                 <span class="font-weight-bold">Q<%= index + 1 %>: <%= String(q.question) %></span>
               </div>
               <div class="ml-3">
-                <span class="badge badge-success mr-2"><%= q.op1 ? 'MCQ' : 'Subjective' %></span>
+                <span class="badge badge-success mr-2">MCQ</span>
                 <button type="button" class="btn btn-sm btn-danger delete-question-btn" onclick="deleteQuestion(event)" title="Delete this question">
                   <i class="fas fa-trash-alt"></i> Delete
                 </button>
@@ -222,16 +202,6 @@
           document.getElementById("displayques").style.display = "none";
         });
 
-        document
-          .getElementById("subjective")
-          .addEventListener("click", function () {
-            //   document.getElementById("enterquestion").innerHTML = `
-            //   `;
-            document.getElementById("subform").style.display = "block";
-            document.getElementById("mcqform").style.display = "none";
-            document.getElementById("bulkform").style.display = "none";
-            document.getElementById("displayques").style.display = "none";
-          });
 
         document.getElementById("bulk").addEventListener("click", function () {
             document.getElementById("bulkform").style.display = "block";
@@ -417,21 +387,15 @@
             </div>
           `;
           
-          if (q.op1) {
-            qContent += `
-              <div class="ml-3 small">
-                <p class="mb-1"><strong>A)</strong> ${q.op1}</p>
-                <p class="mb-1"><strong>B)</strong> ${q.op2}</p>
-                <p class="mb-1"><strong>C)</strong> ${q.op3}</p>
-                <p class="mb-1"><strong>D)</strong> ${q.op4}</p>
-                <p class="mb-0 text-info"><strong>Answer:</strong> ${q.answer}</p>
-              </div>
-            `;
-          } else {
-            qContent += `
-              <p class="ml-3 small text-info mb-0"><strong>Answer:</strong> ${q.answer || 'Subjective'}</p>
-            `;
-          }
+          qContent += `
+            <div class="ml-3 small">
+              <p class="mb-1"><strong>A)</strong> ${q.op1}</p>
+              <p class="mb-1"><strong>B)</strong> ${q.op2}</p>
+              <p class="mb-1"><strong>C)</strong> ${q.op3}</p>
+              <p class="mb-1"><strong>D)</strong> ${q.op4}</p>
+              <p class="mb-0 text-info"><strong>Answer:</strong> ${q.answer}</p>
+            </div>
+          `;
           
           qDiv.innerHTML = qContent;
           questionContainer.appendChild(qDiv);

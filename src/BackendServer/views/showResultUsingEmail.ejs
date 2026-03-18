@@ -4,45 +4,53 @@
     </div>
 
     <div class="row justify-content-center">
+        <% 
+            // Sort results by timestamp/ID descending to show latest on top
+            results.sort((a, b) => {
+                const dateA = new Date(a.created_at || 0);
+                const dateB = new Date(b.created_at || 0);
+                return dateB - dateA;
+            });
+        %>
         <% for(let i=0 ; i < results.length ; i++){ %>
-            <div class="col-md-8 mb-4">
+            <div class="col-md-10 mb-4">
                 <div class="glass-card">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h4 class="font-weight-bold mb-0">Test ID: <span style="color: var(--primary);">
                                 <%= results[i].test_id %>
                             </span></h4>
-                        <div class="badge badge-pill p-2 px-3"
-                            style="background: rgba(56, 189, 248, 0.1); color: var(--primary);">
-                            Result #<%= i + 1 %>
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-sm font-weight-bold px-3 py-2 mr-3 view-answers-btn" 
+                                    data-testid="<%= results[i].test_id %>"
+                                    data-answers="<%= encodeURIComponent(JSON.stringify(results[i].answers)) %>"
+                                    style="border: none; border-radius: 8px; color: white; background: linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow: 0 4px 10px rgba(212,16,170,0.3);">
+                                <i class="fas fa-tasks mr-2"></i> View Detailed Answers
+                            </button>
+                            <div class="badge badge-pill p-2 px-3"
+                                style="background: rgba(56, 189, 248, 0.1); color: var(--primary);">
+                                #<%= results.length - i %>
+                            </div>
                         </div>
                     </div>
 
                     <div class="row text-center mt-4">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
-                                <p class="small text-dim mb-1">Total Score</p>
+                                <p class="small text-dim mb-1">Final Score</p>
                                 <h3 class="font-weight-bold" style="color: var(--secondary);">
-                                    <%= results[i].final_score %>
-                                </h3>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
-                                <p class="small text-dim mb-1">MCQ Points</p>
-                                <h3 class="font-weight-bold">
                                     <%= results[i].mcq_score %>
                                 </h3>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
-                                <p class="small text-dim mb-1">Subjective</p>
+                                <p class="small text-dim mb-1">Maximum Possible</p>
                                 <h3 class="font-weight-bold">
-                                    <%= results[i].subjective_score %>
+                                    <%= allTests.find(t => t.id == results[i].test_id)?.questions?.length || '-' %>
                                 </h3>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
                                 <p class="small text-dim mb-1">Integrity</p>
                                 <h3 class="font-weight-bold"
@@ -57,6 +65,117 @@
             <% } %>
     </div>
 
+  <!-- Answer Modal -->
+  <div class="modal fade" id="answerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--glass-border); backdrop-filter: blur(20px); border-radius: 15px;">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title font-weight-bold" style="color: var(--text-base);">
+            <i class="fas fa-tasks mr-2" style="color: var(--secondary);"></i>
+            Submission Details: <span id="modalTestID" style="color: var(--primary);"></span>
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: var(--text-dim);">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4">
+            <div id="modalQuestionsContainer" style="max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+                <!-- Questions will be injected here -->
+            </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn-snoop btn-glass px-4" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+    const allTests = <%- JSON.stringify(allTests || []) %>;
+
+    function showAnswerModal(testID, studentAnswers) {
+        document.getElementById('modalTestID').innerText = testID;
+        const container = document.getElementById('modalQuestionsContainer');
+        container.innerHTML = '';
+
+        const test = allTests.find(t => t.id == testID);
+        if (!test || !test.questions) {
+            container.innerHTML = '<p class="text-center text-dim py-4">Question details not available for this test.</p>';
+            $('#answerModal').modal('show');
+            return;
+        }
+
+        test.questions.forEach((q, index) => {
+            const studentAns = studentAnswers[index] || "No Answer";
+            
+            // Resolve actual answer text same as backend
+            let actualValue = q.answer;
+            if (q["op" + q.answer]) {
+                actualValue = q["op" + q.answer];
+            } else if (q[q.answer]) {
+                actualValue = q[q.answer];
+            } else if (/^\d+$/.test(q.answer)) {
+                let key = "op" + q.answer;
+                if (q[key]) actualValue = q[key];
+            }
+            
+            const actualAns = actualValue;
+            const isCorrect = studentAns.toLowerCase().trim() === actualAns.toLowerCase().trim();
+
+            const qCard = document.createElement('div');
+            qCard.className = 'glass-card mb-4 p-3';
+            qCard.style.borderLeft = `4px solid ${isCorrect ? '#10b981' : '#ef4444'}`;
+            qCard.style.background = 'rgba(255, 255, 255, 0.03)';
+
+            let optionsHtml = '';
+            if (q.op1) {
+                optionsHtml = `
+                    <div class="row small mt-2">
+                        <div class="col-6 mb-1 ${actualAns === q.op1 ? 'text-success font-weight-bold' : 'text-dim'}">A) ${q.op1}</div>
+                        <div class="col-6 mb-1 ${actualAns === q.op2 ? 'text-success font-weight-bold' : 'text-dim'}">B) ${q.op2}</div>
+                        <div class="col-6 mb-1 ${actualAns === q.op3 ? 'text-success font-weight-bold' : 'text-dim'}">C) ${q.op3}</div>
+                        <div class="col-6 mb-1 ${actualAns === q.op4 ? 'text-success font-weight-bold' : 'text-dim'}">D) ${q.op4}</div>
+                    </div>
+                `;
+            }
+
+            qCard.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="font-weight-bold mb-0">Q${index + 1}: ${q.question}</h6>
+                    <span class="badge ${isCorrect ? 'badge-success' : 'badge-danger'}">
+                        ${isCorrect ? 'CORRECT' : 'INCORRECT'}
+                    </span>
+                </div>
+                ${optionsHtml}
+                <div class="mt-3 pt-2 border-top" style="border-color: rgba(255,255,255,0.05) !important;">
+                    <div class="small">
+                        <span class="text-dim">Your Answer:</span> 
+                        <span class="${isCorrect ? 'text-success' : 'text-danger'} font-weight-bold">${studentAns}</span>
+                    </div>
+                    ${!isCorrect ? `
+                    <div class="small mt-1">
+                        <span class="text-dim">Correct Answer:</span> 
+                        <span class="text-success font-weight-bold">${actualAns}</span>
+                    </div>` : ''}
+                </div>
+            `;
+            container.appendChild(qCard);
+        });
+
+        $('#answerModal').modal('show');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.view-answers-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const testId = this.getAttribute('data-testid');
+                const answers = JSON.parse(decodeURIComponent(this.getAttribute('data-answers')));
+                showAnswerModal(testId, answers);
+            });
+        });
+    });
+</script>
+
     <div class="text-center mt-4 mb-5">
         <button onclick="window.history.back()" class="btn-snoop btn-glass">
             <i class="fas fa-arrow-left mr-2"></i> Back to Search
@@ -65,4 +184,6 @@
             Dashboard <i class="fas fa-home ml-2"></i>
         </a>
     </div>
-    </div>
+<% if (typeof hideHome === 'undefined' || !hideHome) { %>
+    <%- include('footer') %>
+<% } %>

@@ -162,12 +162,6 @@
           </h5>
         </div>
 
-        <% if(test.questions[i].op1===undefined){ %>
-          <div class="form-group mt-3">
-            <textarea class="form-control" placeholder="Type your answer here..." name="<%= test.questions[i].ind %>"
-              rows="6"></textarea>
-          </div>
-          <% } else { %>
 
 
             <div class="options-grid mt-3 ml-4">
@@ -216,7 +210,6 @@
                 </div>
               </div>
             </div>
-            <% } %>
       </div>
       <% } %>
 
@@ -251,9 +244,12 @@
     }, 1000); //1000ms. = 1sec.
 
     // MCQ Selection Logic
-    function selectOption(qIndex, opIndex) {
+    function selectOption(qIndex, opNum) {
+      // Get the text from the span inside the option card to avoid inline syntax errors
+      const opText = document.querySelector(`#q${qIndex}_op${opNum} span.font-weight-bold`).innerText.trim();
+
       // Update Hidden Input (Source of Truth for Form)
-      document.getElementById('input_' + qIndex).value = opIndex;
+      document.getElementById('input_' + qIndex).value = opText;
 
       // Visual Feedback
       // Remove 'selected' from all options of this question
@@ -263,7 +259,7 @@
       }
 
       // Add 'selected' to clicked option
-      document.getElementById(`q${qIndex}_op${opIndex}`).classList.add('selected');
+      document.getElementById(`q${qIndex}_op${opNum}`).classList.add('selected');
     }
 
     // Remove warning on form submit
@@ -598,47 +594,47 @@
         }
     });
 
-    // Handle Submit Button Click (Ensures warnings are suppressed)
-    document.getElementById('endTestId').onclick = function() {
-        if (!isSubmitting && socket) {
-            socket.emit('student_submitted', { testID: currentTestID, studentEmail: studentEmail });
-        }
-        isSubmitting = true;
-        
-        // Stop monitoring before submission
-        if (snoopMonitor && monitoringEnabled) {
-            collectMonitoringData();
-        }
-    };
-
-    // Ensure form submit also sets flag (covers creating programmatic submits)
     const originalSubmit = document.getElementById('testFormID').submit;
-    document.getElementById('testFormID').submit = function() {
-        isSubmitting = true;
-        // Stop monitoring
-        if (snoopMonitor && monitoringEnabled) {
-            collectMonitoringData();
-        }
-        originalSubmit.apply(this);
-    };
-    
-    // Also listen to the actual submit event
-    document.getElementById('testFormID').addEventListener('submit', async function(e) {
+
+    async function executeFinalSubmission() {
         if (isSubmitting) return;
-        if (!isSubmitting && socket) {
+        isSubmitting = true;
+
+        if (socket) {
             socket.emit('student_submitted', { testID: currentTestID, studentEmail: studentEmail });
         }
-        isSubmitting = true;
-        
-        // Stop monitoring and collect data before submission
+
         if (snoopMonitor && monitoringEnabled) {
-            e.preventDefault();
+            Swal.fire({
+                title: 'Submitting Test...',
+                text: 'Processing secure AI submission packet. Please wait.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
             await collectMonitoringData();
-            // Resume with actual form submission
             setTimeout(() => {
                 originalSubmit.apply(document.getElementById('testFormID'));
             }, 500);
+        } else {
+            originalSubmit.apply(document.getElementById('testFormID'));
         }
+    }
+
+    // Handle Submit Button Click
+    document.getElementById('endTestId').onclick = function(e) {
+        e.preventDefault();
+        executeFinalSubmission();
+    };
+
+    // Override programmatic submit
+    document.getElementById('testFormID').submit = function() {
+        executeFinalSubmission();
+    };
+    
+    // Intercept native form submit event
+    document.getElementById('testFormID').addEventListener('submit', function(e) {
+        e.preventDefault();
+        executeFinalSubmission();
     });
 
     // Navigation Lockdown (Back Button Intercept)

@@ -181,8 +181,8 @@ class scoreAndStore(Resource):
         integrity = response.get("integrity", random.randint(1, 100))
         tab_switch_data = response.get("tabSwitchData", []) 
         fullscreen_data = response.get("fullscreenData", []) 
-        action_logs = response.get("actionLogs", []) 
-        subjective_score = random.randint(1, 20)
+        # No longer random - requires manual marking or automated model
+        subjective_score = 0
         
         # Extract AI Monitoring Data
         cheat_score = float(response.get("cheatScore", 0))
@@ -200,19 +200,16 @@ class scoreAndStore(Resource):
             student_ans = str(q.get("studentAnswer", "")).strip().lower()
             actual_ans = str(q.get("actualAnswer", "")).strip().lower()
             
-            if actual_ans != "this is a sbjective question":
-                if student_ans == actual_ans:
-                    mcq_score += 1
-                    print(f"  Q{q['ind']}: MATCH (Student: '{student_ans}', Actual: '{actual_ans}')")
-                else:
-                    print(f"  Q{q['ind']}: MISMATCH (Student: '{student_ans}', Actual: '{actual_ans}')")
+            if student_ans == actual_ans:
+                mcq_score += 1
+                print(f"  Q{q['ind']}: MATCH (Student: '{student_ans}', Actual: '{actual_ans}')")
             else:
-                print(f"  Q{q['ind']}: Subjective - Skipping")
+                print(f"  Q{q['ind']}: MISMATCH (Student: '{student_ans}', Actual: '{actual_ans}')")
                 
             answers.append(q.get("studentAnswer", ""))
 
-        final_score = mcq_score + subjective_score
-        print(f"--- TOTALS: MCQ={mcq_score}, Subjective={subjective_score}, Final={final_score} ---")
+        final_score = mcq_score
+        print(f"--- TOTALS: MCQ={mcq_score}, Final={final_score} ---")
         
         jsondata = {
                 'student_id': int(s_id) if s_id and s_id != 0 else None,  # Can be NULL

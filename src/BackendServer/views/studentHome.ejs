@@ -78,7 +78,7 @@
             </div>
             
             <div class="col-md-2 text-right px-0">
-                <button class="btn btn-sm font-weight-bold w-100 py-2" style="border: none; border-radius: 10px; color: white; background: linear-gradient(135deg, var(--primary), var(--secondary)); transition: all 0.3s; box-shadow: 0 4px 10px rgba(212,16,170,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 15px rgba(212,16,170,0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(212,16,170,0.3)'" onclick="openDetailedResultModal(JSON.parse(decodeURIComponent('<%= encodeURIComponent(JSON.stringify(result)) %>')))">
+                <button class="btn btn-sm font-weight-bold w-100 py-2 view-result-btn" style="border: none; border-radius: 10px; color: white; background: linear-gradient(135deg, var(--primary), var(--secondary)); transition: all 0.3s; box-shadow: 0 4px 10px rgba(212,16,170,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 15px rgba(212,16,170,0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(212,16,170,0.3)'" data-result="<%= encodeURIComponent(JSON.stringify(result)) %>">
                     <i class="fas fa-chart-pie mr-2"></i> View Result
                 </button>
             </div>
@@ -143,22 +143,67 @@ function openJoinTestModal() {
     });
 }
 
+const allTests = <%- JSON.stringify(locals.allTests || []) %>;
+
 function openDetailedResultModal(resultObj) {
     let qnaHtml = '';
-    // Build Question breakdown HTML
-    if(resultObj.answers && resultObj.answers.length > 0) {
-        // Unfortunately the Result API only returns arrays of strings for answers. 
-        // We will mock display it or loop through if available in structured format later.
-        // For now, list the responses.
-        resultObj.answers.forEach((ans, idx) => {
-            qnaHtml += `
-            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: left; border-left: 3px solid var(--primary);">
-                <div style="font-weight: bold; color: var(--text-main);">Q${idx+1}: Your Response</div>
-                <div style="color: var(--text-dim); margin-top: 5px;">${ans}</div>
-            </div>`;
-        });
+    const test = allTests.find(t => String(t.id) === String(resultObj.test_id));
+
+    if (!test || !test.questions) {
+        qnaHtml = '<p class="text-center text-dim py-4">Question details not available for this test.</p>';
     } else {
-        qnaHtml = `<p class="text-dim">No answer data available for this test.</p>`;
+        test.questions.forEach((q, index) => {
+            const studentAns = (resultObj.answers && resultObj.answers[index]) ? resultObj.answers[index] : "No Answer";
+            
+            // Resolve actual answer text
+            let actualValue = q.answer;
+            if (q["op" + q.answer]) {
+                actualValue = q["op" + q.answer];
+            } else if (q[q.answer]) {
+                actualValue = q[q.answer];
+            } else if (/^\d+$/.test(q.answer)) {
+                let key = "op" + q.answer;
+                if (q[key]) actualValue = q[key];
+            }
+            
+            const actualAns = actualValue;
+            const isCorrect = studentAns.toLowerCase().trim() === actualAns.toLowerCase().trim();
+
+            let optionsHtml = '';
+            if (q.op1) {
+                optionsHtml = `
+                    <div style="display: flex; flex-wrap: wrap; margin-top: 10px; font-size: 0.9em;">
+                        <div style="width: 50%; margin-bottom: 5px;" class="${actualAns === q.op1 ? 'text-success font-weight-bold' : 'text-dim'}">A) ${q.op1}</div>
+                        <div style="width: 50%; margin-bottom: 5px;" class="${actualAns === q.op2 ? 'text-success font-weight-bold' : 'text-dim'}">B) ${q.op2}</div>
+                        <div style="width: 50%; margin-bottom: 5px;" class="${actualAns === q.op3 ? 'text-success font-weight-bold' : 'text-dim'}">C) ${q.op3}</div>
+                        <div style="width: 50%; margin-bottom: 5px;" class="${actualAns === q.op4 ? 'text-success font-weight-bold' : 'text-dim'}">D) ${q.op4}</div>
+                    </div>
+                `;
+            }
+
+            qnaHtml += `
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-left: 4px solid ${isCorrect ? '#10b981' : '#ef4444'}; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: var(--text-main); font-size: 1.05em; padding-right: 10px;">Q${index + 1}: ${q.question}</div>
+                        <span style="background: ${isCorrect ? '#10b981' : '#ef4444'}; color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: bold; white-space: nowrap;">
+                            ${isCorrect ? 'CORRECT' : 'INCORRECT'}
+                        </span>
+                    </div>
+                    ${optionsHtml}
+                    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--glass-border);">
+                        <div style="font-size: 0.9em;">
+                            <span class="text-dim">Your Answer:</span> 
+                            <span style="color: ${isCorrect ? '#10b981' : '#ef4444'}; font-weight: bold;">${studentAns}</span>
+                        </div>
+                        ${!isCorrect ? `
+                        <div style="font-size: 0.9em; margin-top: 5px;">
+                            <span class="text-dim">Correct Answer:</span> 
+                            <span style="color: #10b981; font-weight: bold;">${actualAns}</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
+        });
     }
 
     // Build Flag HTML
@@ -213,7 +258,7 @@ function openDetailedResultModal(resultObj) {
             <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
                 <div style="flex: 1; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
                     <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Overall Score</div>
-                    <div style="color: var(--secondary); font-size: 2em; font-weight: bold;">${resultObj.final_score}</div>
+                    <div style="color: var(--secondary); font-size: 2em; font-weight: bold;">${resultObj.mcq_score != null ? resultObj.mcq_score : resultObj.final_score}</div>
                 </div>
                 <div style="flex: 1; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
                     <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Integrity Score</div>
@@ -243,4 +288,14 @@ function openDetailedResultModal(resultObj) {
         }
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.view-result-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const resultText = decodeURIComponent(this.getAttribute('data-result'));
+            const resultObj = JSON.parse(resultText);
+            openDetailedResultModal(resultObj);
+        });
+    });
+});
 </script>
