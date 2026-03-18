@@ -393,5 +393,80 @@
     "event_type": "no_face_detected",
     "timestamp": "2026-03-18T13:59:14",
     "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:38:47",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:38:50",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:38:56",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_faces_detected",
+    "timestamp": "2026-03-18T16:38:57",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "no_face_detected",
+    "timestamp": "2026-03-18T16:39:26",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:39:29",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:39:30",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "no_face_detected",
+    "timestamp": "2026-03-18T16:39:38",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:39:56",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:39:59",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:40:47",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:40:50",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:48:42",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "multiple_persons_detected",
+    "timestamp": "2026-03-18T16:48:44",
+    "confidence": 1.0
+  },
+  {
+    "event_type": "cell_phone_detected",
+    "timestamp": "2026-03-18T16:48:46",
+    "confidence": 0.6826
   }
 ]

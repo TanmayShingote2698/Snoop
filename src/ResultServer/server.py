@@ -181,6 +181,7 @@ class scoreAndStore(Resource):
         integrity = response.get("integrity", random.randint(1, 100))
         tab_switch_data = response.get("tabSwitchData", []) 
         fullscreen_data = response.get("fullscreenData", []) 
+        action_logs = response.get("actionLogs", [])
         # No longer random - requires manual marking or automated model
         subjective_score = 0
         
