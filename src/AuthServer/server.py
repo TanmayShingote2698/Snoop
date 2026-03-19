@@ -26,6 +26,7 @@ def health_check():
 class AddStudent(Resource):
     def __init__(self):
         self.parser = reqparse.RequestParser()
+        self.parser.add_argument('student_id',type=str,required=True,help="This field cannot be left blank.")
         self.parser.add_argument('name',type=str,required=True,help="This field cannot be left blank.")
         self.parser.add_argument('email',type=str,required=True,help="This field cannot be left blank.")
         self.parser.add_argument('password',type=str,required=True,help="This field cannot be left blank.")
@@ -36,7 +37,7 @@ class AddStudent(Resource):
         headers: {"Accept": "application/json","Content-type": "application/json",}
         response = self.parser.parse_args()
         print(response)
-        result = authFunc.addStudent(0,response['name'],
+        result = authFunc.addStudent(response['student_id'],response['name'],
                             response['email'],
                             response['photo_url'],
                             response['password'])
@@ -49,6 +50,7 @@ class AddStudent(Resource):
 class AddAdmin(Resource):
     def __init__(self):
         self.parser = reqparse.RequestParser()
+        self.parser.add_argument('admin_id',type=str,required=True,help="This field cannot be left blank.")
         self.parser.add_argument('name',type=str,required=True,help="This field cannot be left blank.")
         self.parser.add_argument('email',type=str,required=True,help="This field cannot be left blank.")
         self.parser.add_argument('password',type=str,required=True,help="This field cannot be left blank.")
@@ -58,7 +60,7 @@ class AddAdmin(Resource):
         headers: {"Accept": "application/json","Content-type": "application/json",}
         response = self.parser.parse_args()
         print(response)
-        result = authFunc.addAdmin(0,response['name'],
+        result = authFunc.addAdmin(response['admin_id'],response['name'],
                             response['email'],
                             response['password'])
 

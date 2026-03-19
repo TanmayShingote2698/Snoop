@@ -405,6 +405,7 @@ router.post("/register", async (req, res) => {
         url: 'http://127.0.0.1:300/' + 'addAdmin',
         json: true,
         body: {
+            'admin_id': req.body.adminID,
             'name': inputName,
             'email': inputEmail,
             'password': inputPassword
