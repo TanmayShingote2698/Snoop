@@ -41,6 +41,7 @@ class authFunctions:
         # SECURITY FIX: Hash password with bcrypt before storing
         hashed_password = self.hash_password(password)
         jsonData = {
+                    'student_id': id,
                     'name':name,
                     'email':email,
                     'photo_url':photoURL,
@@ -62,6 +63,7 @@ class authFunctions:
         # SECURITY FIX: Hash password with bcrypt before storing
         hashed_password = self.hash_password(password)
         jsonData = {
+                    'admin_id': id,
                     'name':name,
                     'email':email,
                     'password':hashed_password,

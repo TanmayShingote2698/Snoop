@@ -181,6 +181,7 @@ router.post("/register", upload.single('photo'), async (req, res) => {
     url: 'http://127.0.0.1:300/' + 'addStudent',
     json: true,
     body: {
+      'student_id': req.body.studentID,
       'name': inputName,
       'email': inputEmail,
       'password': inputPassword,
