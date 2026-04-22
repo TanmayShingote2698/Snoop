@@ -4,4 +4,5 @@ venv310/
 node_modules/
 __pycache__/
 *.pyc
-*.md
+*.md
+

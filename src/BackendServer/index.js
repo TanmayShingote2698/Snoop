@@ -27,8 +27,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Express body parser
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // Support json bodies
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '10mb' })); // Support larger json bodies for image base64
 
 // Session Configuration
 app.use(session({

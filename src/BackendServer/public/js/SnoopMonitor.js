@@ -25,8 +25,11 @@ class SnoopMonitor {
     // State
     this.isMonitoring = false;
     this.hardwareStream = null;
+    this.screenStream = null;
     this.videoElement = null;
     this.canvasElement = null;
+    this.screenVideoElement = null;
+    this.screenCanvasElement = null;
     this.frameCount = 0;
     this.anomaliesDetected = [];
     this.setupComplete = false;
@@ -69,6 +72,47 @@ class SnoopMonitor {
   }
 
   /**
+   * Request screen capture permission from user
+   */
+  async requestScreenPermission() {
+    try {
+      this.log("🖥️ Requesting screen share permission...");
+      this.updateStatus("Requesting screen share access...", "warning");
+      
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+            cursor: "always"
+        },
+        audio: false
+      });
+      
+      this.screenStream = stream;
+      this.log(" Screen sharing granted!");
+      
+      // Handle if user stops sharing via browser UI
+      this.screenStream.getVideoTracks()[0].onended = () => {
+        this.log("❌ Screen sharing stopped by user");
+        this.updateStatus("SCREEN SHARING STOPPED - Violation Recorded", "error");
+        if (this.onAnomalyDetected) {
+            this.onAnomalyDetected({
+                type: 'SCREEN_SHARE_STOPPED',
+                confidence: 1.0,
+                timestamp: new Date().toISOString()
+            });
+        }
+      };
+      
+      return true;
+    } catch (error) {
+      const errorMsg = `Screen sharing denied: ${error.message}`;
+      this.log(` ${errorMsg}`);
+      this.updateStatus(errorMsg, "error");
+      if (this.onError) this.onError(error);
+      throw error;
+    }
+  }
+
+  /**
    * Initialize hidden video/canvas elements for frame capture
    */
   setupCaptureElements() {
@@ -89,8 +133,32 @@ class SnoopMonitor {
     this.canvasElement.height = this.canvasHeight;
     document.body.appendChild(this.canvasElement);
     
+    if (this.screenStream) {
+        this.setupScreenCaptureElements();
+    }
+    
     this.setupComplete = true;
     this.log("✓ Capture elements initialized");
+  }
+
+  /**
+   * Initialize screen capture elements
+   */
+  setupScreenCaptureElements() {
+    // Create hidden video element for screen
+    this.screenVideoElement = document.createElement('video');
+    this.screenVideoElement.style.display = 'none';
+    this.screenVideoElement.autoplay = true;
+    this.screenVideoElement.playsInline = true;
+    this.screenVideoElement.srcObject = this.screenStream;
+    document.body.appendChild(this.screenVideoElement);
+    
+    // Create hidden canvas for screen capture
+    this.screenCanvasElement = document.createElement('canvas');
+    this.screenCanvasElement.style.display = 'none';
+    this.screenCanvasElement.width = 1280; // Higher res for screen
+    this.screenCanvasElement.height = 720;
+    document.body.appendChild(this.screenCanvasElement);
   }
 
   /**
@@ -179,6 +247,11 @@ class SnoopMonitor {
       
       // Handle detected anomalies
       if (result.anomalies && result.anomalies.length > 0) {
+        if (result.annotated_frame) {
+            for (let anomaly of result.anomalies) {
+                anomaly.annotatedFrameBase64 = result.annotated_frame;
+            }
+        }
         this.onAnomaliesDetected(result.anomalies);
       }
       
@@ -201,6 +274,28 @@ class SnoopMonitor {
       if (this.onAnomalyDetected) {
         this.onAnomalyDetected(anomaly);
       }
+    }
+  }
+
+  /**
+   * Capture current screen frame
+   */
+  captureScreenFrame() {
+    try {
+      if (!this.screenVideoElement || !this.screenCanvasElement) return null;
+      
+      const ctx = this.screenCanvasElement.getContext('2d');
+      ctx.drawImage(
+        this.screenVideoElement,
+        0, 0,
+        this.screenCanvasElement.width,
+        this.screenCanvasElement.height
+      );
+      
+      return this.screenCanvasElement.toDataURL('image/jpeg', 0.5).split(',')[1];
+    } catch (error) {
+      console.error("Screen capture error:", error);
+      return null;
     }
   }
 
@@ -247,12 +342,24 @@ class SnoopMonitor {
       this.hardwareStream.getTracks().forEach(track => track.stop());
     }
     
+    if (this.screenStream) {
+      this.screenStream.getTracks().forEach(track => track.stop());
+    }
+    
     if (this.videoElement && this.videoElement.parentNode) {
       this.videoElement.parentNode.removeChild(this.videoElement);
     }
     
     if (this.canvasElement && this.canvasElement.parentNode) {
       this.canvasElement.parentNode.removeChild(this.canvasElement);
+    }
+
+    if (this.screenVideoElement && this.screenVideoElement.parentNode) {
+        this.screenVideoElement.parentNode.removeChild(this.screenVideoElement);
+    }
+    
+    if (this.screenCanvasElement && this.screenCanvasElement.parentNode) {
+        this.screenCanvasElement.parentNode.removeChild(this.screenCanvasElement);
     }
     
     this.log("🧹 Resources cleaned up");

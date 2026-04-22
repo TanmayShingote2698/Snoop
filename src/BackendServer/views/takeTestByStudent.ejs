@@ -315,8 +315,8 @@
                 </div>
                 <div class="col-6">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-mobile-alt mr-2 text-primary"></i>
-                        <span class="small font-weight-bold">Object Detection</span>
+                        <i class="fas fa-desktop mr-2 text-primary"></i>
+                        <span class="small font-weight-bold">Screen Capture</span>
                     </div>
                 </div>
             </div>
@@ -378,15 +378,54 @@
         }
     }
 
+    async function captureAndUploadFrame(useScreen = false) {
+        if (!snoopMonitor || !monitoringEnabled) return null;
+        try {
+            let base64 = null;
+            if (useScreen && snoopMonitor.screenStream) {
+                base64 = snoopMonitor.captureScreenFrame();
+            } else if (snoopMonitor.canvasElement && snoopMonitor.videoElement) {
+                const ctx = snoopMonitor.canvasElement.getContext('2d');
+                ctx.drawImage(snoopMonitor.videoElement, 0, 0, snoopMonitor.canvasElement.width, snoopMonitor.canvasElement.height);
+                base64 = snoopMonitor.canvasElement.toDataURL('image/jpeg', 0.5).split(',')[1];
+            }
+
+            if (!base64) return null;
+            
+            const res = await fetch('/student/uploadAnomalyImage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64 })
+            });
+            const data = await res.json();
+            return data.success ? data.url : null;
+        } catch(e) { 
+            console.error(e); 
+            return null; 
+        }
+    }
+
     // Helper for instant alerts (doesn't wait for duration like logEvent does)
-    function emitInstantViolation(type, msg) {
+    async function emitInstantViolation(type, msg) {
         if (!isSubmitting) {
-            // Log it locally for database
-            actionLogs.push({
+            const logEntry = {
                 type: type,
                 message: msg,
                 timestamp: new Date().toISOString()
+            };
+            // Log it locally for database
+            actionLogs.push(logEntry);
+
+            // Capture Screen frame specifically for instant browser violations
+            const imageUrl = await captureAndUploadFrame(true);
+            monitoringAnomalies.push({
+                type: type,
+                confidence: 1.0,
+                timestamp: logEntry.timestamp,
+                imageUrl: imageUrl || null,
+                source: 'screen'
             });
+
             updateHiddenInput();
 
             // Broadcast real-time
@@ -406,6 +445,7 @@
         let tabInput = document.getElementById('tabSwitchData');
         let fullInput = document.getElementById('fullscreenData');
         let actionInput = document.getElementById('actionLogs');
+        let anomalyInput = document.getElementById('anomalyData');
         
         if(tabInput) {
             tabInput.value = JSON.stringify(tabSwitchLogs);
@@ -415,6 +455,9 @@
         }
         if(actionInput) {
             actionInput.value = JSON.stringify(actionLogs);
+        }
+        if(anomalyInput) {
+            anomalyInput.value = JSON.stringify(monitoringAnomalies);
         }
     }
 
@@ -796,6 +839,9 @@
             // Request permissions
             await snoopMonitor.requestPermissions();
             
+            // Request Screen Sharing permission
+            await snoopMonitor.requestScreenPermission();
+            
             // Start session
             await snoopMonitor.startMonitoringSession();
             
@@ -806,14 +852,14 @@
             Swal.fire({
                 icon: 'success',
                 title: 'Monitoring Active',
-                text: 'AI proctoring has been activated. You will be analyzed for exam integrity.',
+                text: 'AI proctoring and Screen Capture activated.',
                 timer: 2000,
                 showConfirmButton: false,
                 toast: true,
                 position: 'top-end'
             });
         } catch (error) {
-            console.error("AI Monitoring error:", error);
+            console.error("Monitoring initialization failed:", error);
             handleMonitoringError(error);
         }
     }
@@ -834,9 +880,41 @@
     });
     }
 
-    function onMonitoringAnomaly(anomaly) {
+    async function uploadBase64Frame(base64) {
+        try {
+            const res = await fetch('/student/uploadAnomalyImage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64 })
+            });
+            const data = await res.json();
+            return data.success ? data.url : null;
+        } catch(e) { 
+            console.error(e); 
+            return null; 
+        }
+    }
+
+    async function onMonitoringAnomaly(anomaly) {
+        let imageUrl = null;
+        
+        // If the AI monitoring backend sent back the exact annotated frame, use it!
+        if (anomaly.annotatedFrameBase64) {
+            imageUrl = await uploadBase64Frame(anomaly.annotatedFrameBase64);
+            delete anomaly.annotatedFrameBase64; // Remove massive string so it doesn't inflate database limit
+        } else {
+            // Fallback for non-AI anomalies or if it wasn't returned
+            imageUrl = await captureAndUploadFrame(false); // Use camera
+        }
+
+        if (imageUrl !== null) {
+            anomaly.imageUrl = imageUrl;
+            anomaly.source = anomaly.source || 'camera';
+        }
+
         monitoringAnomalies.push(anomaly);
         console.log("[ANOMALY DETECTED]", anomaly);
+        updateHiddenInput(); // Sync hidden form field
         
         // Alert for critical anomalies
         if (anomaly.type.includes('phone') || anomaly.type.includes('multiple_persons')) {

@@ -22,7 +22,7 @@ class testFunction:
         return self.db.upsertEntry("test",jsonData)
 
     def getTest(self,test_id):
-        query = 'select test_details from test where test_id='+test_id
+        query = "select test_details from test where test_id='"+test_id+"'"
         result = self.db.runQuery(query)
         if len(result)==0:
             return {"Error":"test_id Not Found "}
