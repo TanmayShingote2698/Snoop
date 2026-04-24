@@ -89,11 +89,17 @@ class MonitoringSessionManager:
                 session["anomalies"].extend(anomalies_detected)
                 session["frame_count"] += 1
 
-            return {
+            response_data = {
                 "status": "success",
                 "anomalies": anomalies_detected,
                 "frame_number": session["frame_count"]
             }
+
+            if anomalies_detected:
+                _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 60])
+                response_data["annotated_frame"] = base64.b64encode(buffer).decode('utf-8')
+
+            return response_data
 
         except Exception as e:
             print(f"[ERROR] {e}")

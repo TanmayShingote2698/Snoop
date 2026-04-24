@@ -74,6 +74,18 @@
                     </div>
                     <button class="btn btn-sm btn-outline-primary" onclick="enableFullscreen()">Enable</button>
                 </div>
+
+                <!-- Screen Sharing Check -->
+                <div class="check-item p-3 mb-3 rounded d-flex align-items-center justify-content-between" id="check-screenshare" style="background: rgba(255,255,255,0.02);">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-box mr-3"><i class="fas fa-desktop"></i></div>
+                        <div>
+                            <h6 class="mb-0 font-weight-bold">Screen Sharing Permission</h6>
+                            <small class="text-dim">Required for capturing desktop anomalies</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="checkScreenShare()">Check Permission</button>
+                </div>
             </div>
 
             <!-- Preview Area -->
@@ -120,12 +132,13 @@
     let checks = {
         net: false,
         media: false,
-        fullscreen: false
+        fullscreen: false,
+        screenshare: false
     };
 
     function updateState() {
         const btn = document.getElementById('startBtn');
-        if(checks.net && checks.media && checks.fullscreen) {
+        if(checks.net && checks.media && checks.fullscreen && checks.screenshare) {
             btn.disabled = false;
             btn.innerHTML = 'Enter Examination Environment <i class="fas fa-chevron-right ml-2"></i>';
             btn.classList.remove('btn-snoop-disabled');
@@ -182,6 +195,22 @@
             }).catch(err => {
                 alert("Fullscreen blocked: " + err.message);
             });
+        }
+    }
+
+    // 4. Screen Sharing Check
+    async function checkScreenShare() {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            // Close tracks immediately after verification
+            stream.getTracks().forEach(track => track.stop());
+            
+            checks.screenshare = true;
+            markSuccess('check-screenshare');
+            updateState();
+        } catch (err) {
+            console.error("Screen Share Error:", err);
+            alert("Permission Denied: Screen sharing is mandatory for this exam. Please grant permission to proceed.");
         }
     }
 

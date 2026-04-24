@@ -60,26 +60,61 @@ const SALT_ROUNDS = 12;
 let teacherCred = [];
 let tests = [];
 
-router.post("/submitQues", (req, res) => {
+/**
+ * Helper to find test in memory or hydrate from database.
+ * Prevents data loss after server restarts.
+ */
+const getOrHydrateTest = async (testID, userEmail = null) => {
+    // 1. Check memory
+    let test = tests.find(t => t.id === testID);
+    if (test) return test;
+
+    // 2. Check Database
+    try {
+        const dbResponse = await new Promise((resolve, reject) => {
+            const options = {
+                url: 'http://127.0.0.1:100/getTest',
+                json: true,
+                body: { 'test_id': testID }
+            };
+            request.post(options, (err, resp, body) => {
+                if (err) resolve(null); // Resolve null on error to avoid breaking flow
+                else resolve(body);
+            });
+        });
+
+        if (dbResponse && dbResponse.test_details) {
+            console.log(`[Hydration] Found test ${testID} in DB. Hydrating memory.`);
+            const hydratedTest = dbResponse.test_details;
+            
+            // Fix: Sometimes test_details might be a string in DB
+            const testObj = (typeof hydratedTest === 'string') ? JSON.parse(hydratedTest) : hydratedTest;
+            
+            // Ensure ID consistency
+            if (!testObj.id) testObj.id = testID;
+            
+            tests.push(testObj);
+            return testObj;
+        }
+    } catch (e) {
+        console.error(`[Hydration] Error:`, e);
+    }
+    return null;
+};
+
+
+router.post("/submitQues", async (req, res) => {
     let testID = req.body.testID;
-    let questions = [];
-    let questionAdded = false;
     
-    console.log(`\n📝 submitQues called for Test ID: ${testID}`);
-    console.log(`   System state: ${tests.length} tests in memory`);
-    console.log(`   Received data:`, {
-        question: req.body.question ? req.body.question.substring(0, 50) : 'N/A',
-        op1: req.body.op1 ? 'present' : 'N/A',
-        answer: req.body.answer ? 'present' : 'N/A'
-    });
+    // Use hydration helper instead of loop
+    let test = await getOrHydrateTest(testID, req.session.user ? req.session.user.email : null);
     
-    for (let i = 0; i < tests.length; i++) {
-        console.log(`   Checking test[${i}]: id="${tests[i].id}" (type: ${typeof tests[i].id})`);
-        if (tests[i].id === testID) {
-            console.log(`   ✓✓✓ TEST FOUND at index ${i} - ADDING QUESTION ✓✓✓`);
+    if (test) {
+        console.log(`\n📝 submitQues: Test ${testID} found (memory/hydrated). Adding question.`);
+
             
             // RBAC Check
-            if (tests[i].created_by && tests[i].created_by !== req.session.user.email) {
+            if (test.created_by && test.created_by !== req.session.user.email) {
                 console.log(`   ❌ RBAC Violation: User ${req.session.user.email} tried to add question to test ${testID}`);
                  if (req.headers['x-requested-with'] === 'XMLHttpRequest') {
                     return res.json({ success: false, message: "Permission denied." });
@@ -88,8 +123,6 @@ router.post("/submitQues", (req, res) => {
                  }
             }
 
-            console.log(`   Before add: ${tests[i].questions.length} questions`);
-            
             if (req.body.op1 !== undefined && req.body.op1 !== '') {
                 const questionObj = {
                     question: String(req.body.question || ''),
@@ -99,78 +132,69 @@ router.post("/submitQues", (req, res) => {
                     op4: String(req.body.op4 || ''),
                     answer: String(req.body.answer || ''),
                     type: 'mcq',
-                    ind: tests[i].questions.length + 1
+                    ind: test.questions.length + 1
                 };
-                tests[i].questions.push(questionObj);
-                console.log(`   ✅ Pushed MCQ to tests[${i}].questions`);
+                test.questions.push(questionObj);
+                
+                // PERSISTENCE FIX: Always sync with DB after adding a question
+                const updateOptions = {
+                    url: 'http://127.0.0.1:100/createTest',
+                    json: true,
+                    body: { 'test_id': testID, 'test_details': test }
+                };
+                request.post(updateOptions);
+
+                if (req.headers['x-requested-with'] === 'XMLHttpRequest') {
+                    return res.json({ success: true, questions: test.questions });
+                } else {
+                    return res.render("createTest2", {
+                        testIDfromNode: testID,
+                        questions: test.questions,
+                        hideHome: true,
+                        success: "Question added successfully!"
+                    });
+                }
             }
-            questions = tests[i].questions;
-            questionAdded = true;
-            console.log(`   After add: ${tests[i].questions.length} questions in tests[${i}]`);
-            console.log(`   After add: ${questions.length} questions in local questions variable`);
-            console.log(`   Memory address check: tests[${i}].questions === questions: ${tests[i].questions === questions}`);
-            break;
-        }
-    }
-    
-    if (!questionAdded) {
-        console.log(`   ❌ Test not found! Available test IDs: ${tests.map(t => `"${t.id}"`).join(', ')}`);
-    }
-    
-    // Check if this is an AJAX request (has X-Requested-With header)
-    const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest';
-    
-    if (isAjax) {
-        // AJAX request - return JSON (no page reload)
-        console.log(`   📤 Sending AJAX response: success=${questionAdded}, totalQuestions=${questions.length}`);
-        res.json({
-            success: questionAdded,
-            message: questionAdded ? 'Question saved successfully' : 'Failed to save question',
-            totalQuestions: questions.length
-        });
     } else {
-        // Form submission - render page
-        console.log(`   📄 Rendering form response with ${questions.length} questions`);
-        res.render("createTest2", {
-            testIDfromNode: testID,
-            questions: questions,
-            hideHome: true
-        });
+        console.log(`   ❌ submission failed: Test ${testID} not found.`);
+        if (req.headers['x-requested-with'] === 'XMLHttpRequest') {
+            return res.json({ success: false, message: "Test session not found. Please restart the creation process." });
+        } else {
+            res.redirect("/teacher/home");
+        }
     }
 });
 
 // Submit multiple questions at once (Batch)
-router.post("/submitQuestionsBatch", checkAuthenticated, (req, res) => {
+router.post("/submitQuestionsBatch", checkAuthenticated, async (req, res) => {
     const { testID, questions: newQuestions } = req.body;
     
     console.log(`\n📦 submitQuestionsBatch called for Test ID: ${testID}`);
-    console.log(`   Attempting to add ${newQuestions ? newQuestions.length : 0} questions`);
     
     if (!newQuestions || !Array.isArray(newQuestions)) {
         return res.status(400).json({ success: false, message: "Invalid questions array provided." });
     }
 
-    let testIndex = tests.findIndex(t => t.id === testID);
+    // Use hydration helper
+    let test = await getOrHydrateTest(testID, req.session.user.email);
     
-    if (testIndex === -1) {
-        console.log(`   ❌ Test ${testID} not found in memory.`);
-        return res.status(404).json({ success: false, message: "Test not found." });
+    if (!test) {
+        return res.status(404).json({ success: false, message: "Test session not found." });
     }
 
     // RBAC Check
-    if (tests[testIndex].created_by && tests[testIndex].created_by !== req.session.user.email) {
-        console.log(`   ❌ RBAC Violation: User ${req.session.user.email} tried to add batch questions to test ${testID}`);
+    if (test.created_by && test.created_by !== req.session.user.email) {
         return res.status(403).json({ success: false, message: "Permission denied." });
     }
 
-    console.log(`   Before batch add: ${tests[testIndex].questions.length} questions`);
+    console.log(`   Before batch add: ${test.questions.length} questions`);
     
     // Add questions to the test
     newQuestions.forEach(q => {
         const questionObj = {
             question: safeString(q.question),
             type: q.type || 'mcq',
-            ind: tests[testIndex].questions.length + 1
+            ind: test.questions.length + 1
         };
 
         if (questionObj.type === 'mcq') {
@@ -183,63 +207,64 @@ router.post("/submitQuestionsBatch", checkAuthenticated, (req, res) => {
             questionObj.answer = safeString(q.answer);
         }
 
-        tests[testIndex].questions.push(questionObj);
+        test.questions.push(questionObj);
     });
 
-    console.log(`   ✅ Batch add complete: ${tests[testIndex].questions.length} total questions`);
+    // SYNC WITH DB
+    const updateOptions = {
+        url: 'http://127.0.0.1:100/createTest',
+        json: true,
+        body: { 'test_id': testID, 'test_details': test }
+    };
+    request.post(updateOptions);
+
+    console.log(`   ✅ Batch add complete: ${test.questions.length} total questions`);
     
     res.json({
         success: true,
         message: `Successfully added ${newQuestions.length} questions.`,
-        totalQuestions: tests[testIndex].questions.length
+        totalQuestions: test.questions.length
     });
 });
 
+
 // Delete a question from test
-router.post("/deleteQuestion", (req, res) => {
+router.post("/deleteQuestion", async (req, res) => {
     const { testID, questionIndex } = req.body;
-    
     console.log(`\n🗑️ deleteQuestion called - TestID: "${testID}", Index: ${questionIndex}`);
     
-    let questionDeleted = false;
+    let test = await getOrHydrateTest(testID, req.session.user.email);
     
-    for (let i = 0; i < tests.length; i++) {
-        if (tests[i].id === testID) {
-            console.log(`   Test found at index ${i}`);
-            
-            // RBAC Check
-            if (tests[i].created_by && tests[i].created_by !== req.session.user.email) {
-                 console.log(`   ❌ RBAC Violation: Delete Question denied.`);
-                 if (req.headers['x-requested-with'] === 'XMLHttpRequest') {
-                    return res.json({ success: false, message: "Permission denied." });
-                 }
-                 break; 
-            }
+    if (!test) {
+        return res.json({ success: false, message: "Test not found." });
+    }
 
-            console.log(`   Before delete: ${tests[i].questions.length} questions`);
-            
-            if (questionIndex >= 0 && questionIndex < tests[i].questions.length) {
-                const deletedQuestion = tests[i].questions[questionIndex];
-                tests[i].questions.splice(questionIndex, 1);
-                console.log(`   ✅ Deleted Q${questionIndex + 1}: "${deletedQuestion.question.substring(0, 50)}..."`);
-                console.log(`   After delete: ${tests[i].questions.length} questions\n`);
-                questionDeleted = true;
-            } else {
-                console.log(`   ❌ Invalid question index: ${questionIndex}\n`);
-            }
-            break;
-        }
+    // RBAC Check
+    if (test.created_by && test.created_by !== req.session.user.email) {
+         return res.json({ success: false, message: "Permission denied." });
     }
-    
-    const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest';
-    
-    if (isAjax) {
-        res.json({
-            success: questionDeleted,
-            message: questionDeleted ? 'Question deleted successfully' : 'Failed to delete question'
-        });
+
+    let questionDeleted = false;
+    if (questionIndex >= 0 && questionIndex < test.questions.length) {
+        test.questions.splice(questionIndex, 1);
+        
+        // SYNC WITH DB
+        const updateOptions = {
+            url: 'http://127.0.0.1:100/createTest',
+            json: true,
+            body: { 'test_id': testID, 'test_details': test }
+        };
+        request.post(updateOptions);
+        
+        questionDeleted = true;
     }
+
+    res.json({
+        success: questionDeleted,
+        message: questionDeleted ? 'Question deleted successfully' : 'Failed to delete question'
+    });
 });
+
 
 router.get("/logout", (req, res) => {
     req.session.destroy((err) => {
@@ -255,67 +280,48 @@ router.get("/enterTestID", checkAuthenticated, (req, res) => {
     });
 });
 
-router.post("/takeTestID", (req, res) => {
+router.post("/takeTestID", async (req, res) => {
     let testID = req.body.testID;
-    console.log(`\n🏗️ takeTestID called - Creating/Updating test with ID: "${testID}" (type: ${typeof testID})`);
-    console.log(`   Tests before: ${tests.length} existing tests`);
-    
-    let existingTestIndex = tests.findIndex(t => t.id === testID);
-    console.log(`   Search result: existingTestIndex = ${existingTestIndex}`);
+    console.log(`\n🔍 takeTestID called for Test: ${testID}`);
 
-    if (existingTestIndex === -1) {
-        console.log(`   → Creating NEW test`);
-        let test = {};
-        test.id = testID;
-        test.testDuration = req.body.testDuration;
-        test.warningThreshold = req.body.warningThreshold;
-        test.startTime = req.body.startTime;
-        test.endTime = req.body.endTime; // Capture End Time
-        test.accessCode = req.body.accessCode; // Store Access Code
-        test.created_by = req.session.user.email; // RBAC: Tag with creator email
-        test.questions = [];
-        tests.push(test);
-        
-        // SAVE TO DB IMMEDIATELY to persist ownership
-        const options = {
-            url: 'http://127.0.0.1:100/createTest',
-            json: true,
-            body: {
-                'test_id': testID,
-                'test_details': test
-            }
+    // Hydrate or find test
+    let test = await getOrHydrateTest(testID, req.session.user.email);
+
+    if (!test) {
+        console.log(`   🆕 Test ${testID} is new. Initializing structure.`);
+        test = {
+            id: testID,
+            questions: [],
+            created_by: req.session.user.email
         };
-        request.post(options, (err, resp, body) => {
-            if (err) console.log("Error saving new test to DB:", err);
-            else console.log("New test saved to DB with owner:", test.created_by);
-        });
-
-        console.log(`   ✅ New test pushed to tests array at index ${tests.length - 1}`);
-        console.log(`   ✅ Test structure: {id: "${test.id}", start: "${test.startTime}", end: "${test.endTime}", ...}`);
+        tests.push(test);
     } else {
-        // RBAC: Verify ownership before update
-        if (tests[existingTestIndex].created_by && tests[existingTestIndex].created_by !== req.session.user.email) {
-             console.log(`   ❌ RBAC Violation: User ${req.session.user.email} tried to edit test ${testID} owned by ${tests[existingTestIndex].created_by}`);
-             return res.redirect("/teacher/showAllTests?error=" + encodeURIComponent("You do not have permission to edit this test."));
+        console.log(`   ✅ Test ${testID} already exists. Updating configuration.`);
+        // Update ownership if missing for old tests
+        if (!test.created_by) test.created_by = req.session.user.email;
+        
+        // RBAC: Verify ownership 
+        if (test.created_by !== req.session.user.email) {
+             console.log(`   ❌ RBAC Violation: User ${req.session.user.email} tried to access test ${testID} owned by ${test.created_by}`);
+             return res.redirect("/teacher/showAllTests?error=" + encodeURIComponent("You do not have permission to access this test."));
         }
-
-        // Update existing test details if re-entering
-        console.log(`   → Updating EXISTING test at index ${existingTestIndex}`);
-        tests[existingTestIndex].testDuration = req.body.testDuration;
-        tests[existingTestIndex].warningThreshold = req.body.warningThreshold;
-        tests[existingTestIndex].startTime = req.body.startTime;
-        tests[existingTestIndex].endTime = req.body.endTime;
-        tests[existingTestIndex].accessCode = req.body.accessCode; // Update Access Code
-        console.log(`   ✅ Existing test updated`);
     }
 
-    console.log(`   Tests after: ${tests.length} total tests\n`);
+    // Apply configuration from body
+    test.testDuration = parseInt(req.body.testDuration) || test.testDuration || 0;
+    test.warningThreshold = parseInt(req.body.warningThreshold) || test.warningThreshold || 0;
+    test.startTime = req.body.startTime || test.startTime || '';
+    test.endTime = req.body.endTime || test.endTime || '';
+    test.accessCode = req.body.accessCode || test.accessCode || '';
+
 
     res.render("createTest2", {
         testIDfromNode: testID,
-        questions: (existingTestIndex !== -1) ? tests[existingTestIndex].questions : []
+        questions: test.questions,
+        hideHome: true
     });
 });
+
 
 router.get("/login", checkNotAuthenticated, (req, res) => {
     res.render("teacherLogin");
@@ -429,91 +435,58 @@ router.get("/showTeachers", (req, res) => {
 });
 
 // Show test after creation
-router.all("/showTestAfterCreation", (req, res) => {
+router.all("/showTestAfterCreation", async (req, res) => {
     let testID = req.body.testID || req.query.testID;
-    console.log(`\n📋 showTestAfterCreation called for Test ID: "${testID}" (type: ${typeof testID})`);
-    console.log(`📊 Total tests in system at this moment: ${tests.length}`);
-    console.log(`🔍 Full system state:`);
-    tests.forEach((t, idx) => {
-        console.log(`   tests[${idx}]: id="${t.id}" | questions: ${t.questions.length}`);
-    });
+    console.log(`\n📋 showTestAfterCreation called for Test ID: "${testID}"`);
     
-    let test = null;
-    let foundAtIndex = -1;
-    for (let i = 0; i < tests.length; i++) {
-        console.log(`  Comparing: tests[${i}].id="${tests[i].id}" === "${testID}" ? ${tests[i].id === testID}`);
-        if (tests[i].id === testID) {
-            foundAtIndex = i;
-            test = tests[i];
-            break;
-        }
-    }
+    // Hydrate first to avoid overwriting existing tests with empty shells
+    let test = await getOrHydrateTest(testID, req.session.user ? req.session.user.email : null);
 
     if (!test) {
-        console.log(`❌ Test not found! Creating fallback empty test object.`);
+        console.log(`❌ Test not found in memory or DB! Creating fallback.`);
         test = {
             id: testID,
             questions: [],
             testDuration: 0,
             warningThreshold: 0,
             startTime: '',
-            accessCode: ''
+            accessCode: '',
+            created_by: req.session.user ? req.session.user.email : null
         };
-    } else {
-        console.log(`✅✅ Test FOUND at index ${foundAtIndex}!`);
-        console.log(`✅ Test has ${test.questions.length} questions`);
-        if (test.questions.length > 0) {
-            test.questions.forEach((q, idx) => {
-                console.log(`   Q${idx + 1}: ${q.question.substring(0, 50)}...`);
-            });
-        }
+        tests.push(test);
     }
 
-    let testJSON = test;
-
+    // Always sync with DB to be safe
     const options = {
-        url: 'http://127.0.0.1:100/' + 'createTest',
+        url: 'http://127.0.0.1:100/createTest',
         json: true,
         body: {
             'test_id': testID,
-            'test_details': testJSON,
+            'test_details': test,
         }
     };
 
     request.post(options, (err, resp, body) => {
-        if (err) {
-            console.log('Error posting to test server:', err);
-        } else {
-            console.log('Test server response:', body);
-        }
+        if (err) console.error('Error posting to test server:', err);
     });
 
-    console.log(`🎯 Rendering showTestAfterCreation with ${test.questions.length} questions`);
-    console.log(`   Response object will contain:`, {
-        id: test.id,
-        questions_count: test.questions.length,
-        testDuration: test.testDuration,
-        warningThreshold: test.warningThreshold,
-        startTime: test.startTime,
-        accessCode: test.accessCode
-    });
-    console.log(`\n`);
     res.render("showTestAfterCreation", {
         test,
         hideHome: true
     });
-
 });
 
+
 // Edit Test - Re-open creation view with existing data
-router.post("/editTest", checkAuthenticated, (req, res) => {
+router.post("/editTest", checkAuthenticated, async (req, res) => {
     let testID = req.body.testID;
-    let test = tests.find(t => t.id === testID);
+    let test = await getOrHydrateTest(testID, req.session.user.email);
 
     if (!test) {
-        req.session.errorMessage = "Test not found.";
+        req.session.errorMessage = "Test not found in system.";
         return res.redirect("/teacher/showAllTests");
     }
+
 
     // RBAC Check
     if (test.created_by && test.created_by !== req.session.user.email) {
@@ -746,7 +719,7 @@ router.post("/generateQuestionsAI", checkAuthenticated, async (req, res) => {
 });
 
 // Save Generated Test
-router.post("/saveGeneratedTest", checkAuthenticated, (req, res) => {
+router.post("/saveGeneratedTest", checkAuthenticated, async (req, res) => {
     try {
         const testID = req.body.testID;
         const questions = JSON.parse(req.body.questions);
@@ -755,27 +728,24 @@ router.post("/saveGeneratedTest", checkAuthenticated, (req, res) => {
          const startTime = new Date().getHours();
         const warningThreshold = 50;
 
-        // Create test object
-        const testObj = {
-            id: testID,
-            testDuration: testDuration,
-            warningThreshold: warningThreshold,
-            startTime: startTime,
-            accessCode: accessCode,
-            questions: questions,
-            generatedByAI: true,
-            created_by: req.session.user.email, // RBAC Tag
-            generatedAt: new Date().toISOString()
-        };
-
-        // Check if test already exists
-        let existingTestIndex = tests.findIndex(t => t.id === testID);
+        // Check if test already exists or needs hydration
+        let testObj = await getOrHydrateTest(testID, req.session.user.email);
         
-        if (existingTestIndex === -1) {
+        if (!testObj) {
+            testObj = { id: testID, questions: [] };
             tests.push(testObj);
-        } else {
-            tests[existingTestIndex] = testObj;
         }
+
+        // Update properties
+        testObj.testDuration = testDuration;
+        testObj.warningThreshold = warningThreshold;
+        testObj.startTime = startTime;
+        testObj.accessCode = accessCode;
+        testObj.questions = questions; // Overwrite questions with generated ones
+        testObj.generatedByAI = true;
+        testObj.created_by = req.session.user.email;
+        testObj.generatedAt = new Date().toISOString();
+
 
         // Save to database
         const options = {
@@ -808,8 +778,9 @@ router.post("/sendInvites", checkAuthenticated, localUpload.single('inviteFile')
     const { testID, accessCode, emails } = req.body;
     const teacherName = req.session.user.name || "Your Teacher";
     
-    // Find test details for the email template
-    const test = tests.find(t => t.id === testID) || {};
+    // Find test details for the email template (Using hydration)
+    const test = await getOrHydrateTest(testID, req.session.user.email) || {};
+
     const testInfo = {
         duration: test.testDuration,
         startTime: test.startTime,
@@ -1087,8 +1058,46 @@ router.get("/liveMonitor/:testID", checkAuthenticated, (req, res) => {
     });
 });
 
+// Send Performance & Integrity Report to Student
+router.post("/sendStudentReport", checkAuthenticated, async (req, res) => {
+    const { 
+        email, 
+        testID, 
+        mcqScore, 
+        totalQuestions, 
+        integrity, 
+        cheatScore, 
+        anomalies,
+        teacherComment 
+    } = req.body;
+
+    console.log(`\n📧 Sending report to ${email} for Test ${testID}`);
+
+    try {
+        const result = await emailService.sendStudentReportEmail(email, {
+            testID,
+            studentName: email.split('@')[0],
+            mcqScore,
+            totalQuestions,
+            integrity,
+            cheatScore,
+            anomalies,
+            teacherComment
+        });
+
+        if (result.success) {
+            res.json({ success: true, message: "Report sent successfully!" });
+        } else {
+            res.status(500).json({ success: false, message: "Failed to send email." });
+        }
+    } catch (error) {
+        console.error("Report send error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Bulk Upload Questions
-router.post("/uploadQuestions", checkAuthenticated, localUpload.single('file'), (req, res) => {
+router.post("/uploadQuestions", checkAuthenticated, localUpload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             req.session.errorMessage = "No file uploaded.";
@@ -1097,19 +1106,22 @@ router.post("/uploadQuestions", checkAuthenticated, localUpload.single('file'), 
 
         const testID = req.body.testID;
         const filePath = req.file.path;
+        
+        let test = await getOrHydrateTest(testID, req.session.user.email);
+        
+        if (!test) {
+            // Cleanup and error
+            fs.unlinkSync(filePath);
+            req.session.errorMessage = "Test session lost. Please re-enter the Test ID.";
+            return res.redirect("/teacher/showAllTests");
+        }
+
         const workbook = xlsx.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         // raw: false ensures we get formatted strings instead of cell objects/raw values
         const data = xlsx.utils.sheet_to_json(sheet, { raw: false });
 
-        let test = tests.find(t => t.id === testID);
-        if (!test) {
-            // Cleanup and error
-            fs.unlinkSync(filePath);
-            req.session.errorMessage = "Test not found.";
-            return res.redirect("/teacher/showAllTests");
-        }
 
         let addedCount = 0;
         data.forEach((row, index) => {

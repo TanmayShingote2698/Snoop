@@ -715,4 +715,24 @@ router.get("/logout", (req, res) => {
   });
 });
 
+// Upload Anomaly Frame to Cloudinary
+router.post("/uploadAnomalyImage", checkAuthenticated, async (req, res) => {
+  try {
+    const base64Data = req.body.image;
+    if (!base64Data) {
+      return res.status(400).json({ success: false, message: "No image data provided" });
+    }
+
+    const uploadResponse = await cloudinary.uploader.upload(
+      `data:image/jpeg;base64,${base64Data}`,
+      { folder: "snoop_anomalies" }
+    );
+
+    res.json({ success: true, url: uploadResponse.secure_url });
+  } catch (error) {
+    console.error("Error uploading anomaly image:", error);
+    res.status(500).json({ success: false, message: "Upload failed" });
+  }
+});
+
 module.exports = router;

@@ -60,6 +60,51 @@
                             </div>
                         </div>
                     </div>
+                        </div>
+                    </div>
+
+                    <% if (results[i].monitoring_enabled && results[i].anomaly_data && results[i].anomaly_data.length > 0) { %>
+                    <div class="mt-4 pt-4 border-top" style="border-color: rgba(255,255,255,0.05) !important;">
+                        <h5 class="font-weight-bold mb-3 text-danger"><i class="fas fa-exclamation-triangle mr-2"></i> Integrity Anomalies</h5>
+                        <div class="row">
+                            <% results[i].anomaly_data.slice(0, 4).forEach(function(anom, index) { %>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div class="glass-card p-2 h-100 d-flex flex-column" style="border: 1px solid var(--glass-border); border-radius: 6px;">
+                                        <div class="mb-2">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="badge badge-warning">Event ${index + 1}</span>
+                                            </div>
+                                            <small class="text-dim">
+                                                <strong class="text-danger"><%= anom.type.replace(/_/g, ' ').toUpperCase() %></strong><br>
+                                                Confidence: <%= (anom.confidence * 100).toFixed(0) %>%<br>
+                                                Time: <%= new Date(anom.timestamp).toLocaleTimeString() %>
+                                            </small>
+                                        </div>
+                                        <% if (anom.imageUrl) { %>
+                                            <div class="mt-auto text-center" style="position: relative;">
+                                                <img src="<%= anom.imageUrl %>" alt="Capture" class="img-fluid rounded border border-danger shadow-sm" style="max-height: 100px; object-fit: cover; cursor: pointer; border-width: 2px !important;" onclick="window.open('<%= anom.imageUrl %>', '_blank')">
+                                                <div title="Source: <%= anom.source || 'camera' %>" style="position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.6); color: white; padding: 2px 5px; border-radius: 4px; font-size: 0.6rem;">
+                                                    <i class="fas <%= anom.source === 'screen' ? 'fa-desktop' : 'fa-camera' %>"></i>
+                                                </div>
+                                            </div>
+                                        <% } else { %>
+                                            <div class="mt-auto text-center py-2 text-dim rounded" style="background: rgba(255,255,255,0.05); font-size: 0.75rem;">
+                                                <i class="fas fa-video-slash"></i>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                        <% if (results[i].anomaly_data.length > 4) { %>
+                            <div class="mt-2 text-center">
+                                <button class="btn btn-sm btn-outline-danger font-weight-bold view-anomalies-btn" data-anomalies="<%= encodeURIComponent(JSON.stringify(results[i].anomaly_data)) %>">
+                                    View All <%= results[i].anomaly_data.length %> Anomalies
+                                </button>
+                            </div>
+                        <% } %>
+                    </div>
+                    <% } %>
                 </div>
             </div>
             <% } %>
@@ -90,8 +135,83 @@
     </div>
   </div>
 
+  <!-- All Anomalies Modal -->
+  <div class="modal fade" id="allAnomaliesModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--glass-border); backdrop-filter: blur(20px); border-radius: 15px;">
+        <div class="modal-header border-0 pb-2">
+          <div class="d-flex align-items-center">
+            <h5 class="modal-title font-weight-bold mb-0 text-danger">
+              <i class="fas fa-exclamation-triangle mr-2"></i> All Integrity Anomalies
+            </h5>
+          </div>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: var(--text-dim); padding: 1rem 1rem 0 0; margin: -1rem -1rem -1rem auto;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4">
+            <div id="modalAnomaliesContainer" class="row" style="max-height: 60vh; overflow-y: auto; overflow-x: hidden;">
+                <!-- Anomalies will be injected here -->
+            </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn-snoop btn-glass px-4" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
     const allTests = <%- JSON.stringify(allTests || []) %>;
+
+    function showAllAnomaliesModal(anomalies) {
+        const container = document.getElementById('modalAnomaliesContainer');
+        container.innerHTML = '';
+        
+        anomalies.forEach((anom, index) => {
+            const anomCard = document.createElement('div');
+            anomCard.className = 'col-md-4 col-lg-3 mb-4';
+            
+            let imgHtml = '';
+            if (anom.imageUrl) {
+                imgHtml = `
+                    <div class="mt-2 text-center" style="position: relative; height: 150px;">
+                        <img src="${anom.imageUrl}" alt="Capture" class="img-fluid rounded border border-danger shadow-sm h-100 w-100" style="object-fit: cover; cursor: pointer; border-width: 2px !important;" onclick="window.open('${anom.imageUrl}', '_blank')">
+                        <div title="Source: ${anom.source || 'camera'}" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.6); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem;">
+                            <i class="fas ${anom.source === 'screen' ? 'fa-desktop' : 'fa-camera'}"></i> ${(anom.source || 'camera').toUpperCase()}
+                        </div>
+                    </div>
+                `;
+            } else {
+                imgHtml = `
+                    <div class="mt-2 text-center py-4 text-dim rounded d-flex flex-column justify-content-center align-items-center" style="background: rgba(255,255,255,0.05); height: 150px;">
+                        <i class="fas fa-video-slash fa-2x mb-2"></i><span>No Capture Available</span>
+                    </div>
+                `;
+            }
+            
+            anomCard.innerHTML = `
+                <div class="glass-card p-3 h-100 d-flex flex-column" style="border: 1px solid var(--glass-border); border-radius: 8px;">
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge ${anom.confidence > 0.8 ? 'badge-danger' : 'badge-warning'}">Event ${index + 1}</span>
+                            <small class="text-dim">${new Date(anom.timestamp).toLocaleTimeString()}</small>
+                        </div>
+                        <h6 class="font-weight-bold text-danger mt-2 mb-1" style="font-size: 0.9em;">
+                            ${anom.type.replace(/_/g, ' ').toUpperCase()}
+                        </h6>
+                        <small class="text-dim d-block mb-2">Confidence: ${(anom.confidence * 100).toFixed(0)}%</small>
+                    </div>
+                    <div class="mt-auto">
+                        ${imgHtml}
+                    </div>
+                </div>
+            `;
+            container.appendChild(anomCard);
+        });
+        
+        $('#allAnomaliesModal').modal('show');
+    }
 
     function showAnswerModal(testID, studentAnswers) {
         document.getElementById('modalTestID').innerText = testID;
@@ -171,6 +291,13 @@
                 const testId = this.getAttribute('data-testid');
                 const answers = JSON.parse(decodeURIComponent(this.getAttribute('data-answers')));
                 showAnswerModal(testId, answers);
+            });
+        });
+
+        document.querySelectorAll('.view-anomalies-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const anomalies = JSON.parse(decodeURIComponent(this.getAttribute('data-anomalies')));
+                showAllAnomaliesModal(anomalies);
             });
         });
     });
