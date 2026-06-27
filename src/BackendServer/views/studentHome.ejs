@@ -255,14 +255,32 @@ function openDetailedResultModal(resultObj) {
         title: `Results - Test ID ${resultObj.test_id}`,
         width: '600px',
         html: `
-            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
-                <div style="flex: 1; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
-                    <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Overall Score</div>
-                    <div style="color: var(--secondary); font-size: 2em; font-weight: bold;">${resultObj.mcq_score != null ? resultObj.mcq_score : resultObj.final_score}</div>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                    <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Score</div>
+                    <div style="color: var(--secondary); font-size: 1.8em; font-weight: bold;">
+                        ${resultObj.total_marks && resultObj.total_marks > 0 
+                            ? (resultObj.mcq_obtained || resultObj.mcq_score) + ' / ' + resultObj.total_marks 
+                            : (resultObj.mcq_score != null ? resultObj.mcq_score : resultObj.final_score)}
+                    </div>
                 </div>
-                <div style="flex: 1; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
-                    <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Integrity Score</div>
-                    <div style="color: ${resultObj.integrity < 75 ? '#ef4444' : '#22c55e'}; font-size: 2em; font-weight: bold;">${resultObj.integrity}%</div>
+                <div style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                    <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Percentage</div>
+                    <div style="color: ${resultObj.percentage >= 75 ? '#10b981' : resultObj.percentage >= 40 ? '#fbbf24' : '#ef4444'}; font-size: 1.8em; font-weight: bold;">
+                        ${resultObj.percentage != null && resultObj.percentage > 0 ? resultObj.percentage + '%' : '-'}
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                    <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Status</div>
+                    <div style="font-size: 1.8em; font-weight: bold;">
+                        ${resultObj.pass_status && resultObj.total_marks > 0 
+                            ? '<span style="color: ' + (resultObj.pass_status === 'PASS' ? '#10b981' : '#ef4444') + ';">' + resultObj.pass_status + '</span>'
+                            : '<span style="color: var(--text-dim);">-</span>'}
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                    <div style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 5px;">Integrity</div>
+                    <div style="color: ${resultObj.integrity < 75 ? '#ef4444' : '#22c55e'}; font-size: 1.8em; font-weight: bold;">${resultObj.integrity}%</div>
                 </div>
             </div>
             

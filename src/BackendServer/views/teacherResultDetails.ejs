@@ -26,9 +26,10 @@
                             <tr>
                                 <th scope="col" class="font-weight-bold text-dim pb-2" style="font-size: 0.85rem; white-space: nowrap;">Student Email</th>
                                 <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Score</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Percentage</th>
+                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Status</th>
                                 <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Integrity</th>
                                 <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">AI Score</th>
-                                <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Combined</th>
                                 <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Risk</th>
                                 <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Monitor</th>
                                 <th scope="col" class="font-weight-bold text-dim pb-2 text-center" style="font-size: 0.85rem; white-space: nowrap;">Action</th>
@@ -70,7 +71,29 @@
                                         </div>
                                     </td>
                                     <td class="align-middle text-center py-1">
-                                        <span class="font-weight-bold" style="color: var(--secondary); font-size: 1rem;"><%= r.mcq_score %></span>
+                                        <% if (r.total_marks && r.total_marks > 0) { %>
+                                            <span class="font-weight-bold" style="color: var(--secondary); font-size: 1rem;"><%= r.mcq_obtained || r.mcq_score %> / <%= r.total_marks %></span>
+                                        <% } else { %>
+                                            <span class="font-weight-bold" style="color: var(--secondary); font-size: 1rem;"><%= r.mcq_score %></span>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle text-center py-1">
+                                        <% if (r.percentage != null && r.total_marks > 0) { %>
+                                            <span class="badge badge-pill px-2 py-1" style="background: <%= r.percentage >= 75 ? '#10b981' : r.percentage >= 40 ? '#fbbf24' : '#ef4444' %>33; color: <%= r.percentage >= 75 ? '#10b981' : r.percentage >= 40 ? '#fbbf24' : '#ef4444' %>; border: 1px solid <%= r.percentage >= 75 ? '#10b981' : r.percentage >= 40 ? '#fbbf24' : '#ef4444' %>44; font-size: 0.75rem;">
+                                                <%= r.percentage %>%
+                                            </span>
+                                        <% } else { %>
+                                            <span class="text-dim" style="font-size: 0.75rem;">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle text-center py-1">
+                                        <% if (r.pass_status && r.total_marks > 0) { %>
+                                            <span class="badge badge-pill px-2 py-1" style="background: <%= r.pass_status === 'PASS' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)' %>; color: <%= r.pass_status === 'PASS' ? '#10b981' : '#ef4444' %>; border: 1px solid <%= r.pass_status === 'PASS' ? '#10b981' : '#ef4444' %>; font-size: 0.75rem; font-weight: bold;">
+                                                <i class="fas <%= r.pass_status === 'PASS' ? 'fa-check-circle' : 'fa-times-circle' %> mr-1"></i><%= r.pass_status %>
+                                            </span>
+                                        <% } else { %>
+                                            <span class="text-dim" style="font-size: 0.75rem;">-</span>
+                                        <% } %>
                                     </td>
                                     <td class="align-middle text-center py-1">
                                         <span class="badge badge-pill px-2 py-1" style="background: <%= integrityColor %>33; color: <%= integrityColor %>; border: 1px solid <%= integrityColor %>44; font-size: 0.75rem;">
@@ -151,7 +174,7 @@
                                 </tr>
                                 <!-- Anomaly Details Row -->
                                 <tr id="details-<%= idx %>" style="display: none; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--glass-border);">
-                                    <td colspan="8" class="py-3">
+                                    <td colspan="10" class="py-3">
                                         <div class="ml-3">
                                             <h6 class="font-weight-bold mb-3" style="color: var(--primary);">Detected Anomalies (Select for Report)</h6>
                                             <% if (r.anomaly_data && r.anomaly_data.length > 0) { %>

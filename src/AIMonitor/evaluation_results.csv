@@ -1,0 +1,6 @@
+model,total_frames,anomaly_frames,normal_frames,anomaly_rate_pct,detection_accuracy_pct,avg_confidence_pct,total_events,avg_time_ms,errors
+Face Detection,39,2,37,5.13,100.0,100.0,1,76.56,0
+Gaze Detection,39,0,39,0.0,100.0,0.0,0,9.07,0
+Object Detection,39,5,34,12.82,100.0,100.0,5,639.77,0
+Audio Monitor,39,21,18,53.85,100.0,0.0,0,0.0,0
+Cheat Score,39,2,37,5.13,100.0,20.0,2,0.0,0

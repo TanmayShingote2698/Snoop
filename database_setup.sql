@@ -45,6 +45,16 @@ CREATE TABLE IF NOT EXISTS public.result (
     fullscreen_data JSONB DEFAULT '[]'::jsonb,
     action_logs JSONB DEFAULT '[]'::jsonb,
     subjective_score INT DEFAULT 0,
+    -- Accurate Scoring Fields
+    total_marks INT DEFAULT 0,
+    mcq_total INT DEFAULT 0,
+    mcq_obtained INT DEFAULT 0,
+    subjective_total INT DEFAULT 0,
+    subjective_obtained INT DEFAULT 0,
+    percentage DECIMAL(5,2) DEFAULT 0,
+    pass_status TEXT DEFAULT 'FAIL',
+    passing_marks INT DEFAULT 0,
+    question_scores JSONB DEFAULT '[]'::jsonb,
     -- AI Monitor Fields
     monitoring_enabled BOOLEAN DEFAULT FALSE,
     cheat_score DECIMAL(5,2) DEFAULT 0,

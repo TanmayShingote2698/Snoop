@@ -70,9 +70,15 @@
           <div class="col-md-6 form-group"><label>Option 4</label><input required type="text" class="form-control"
               name="op4" placeholder="Option 4"></div>
         </div>
-        <div class="form-group w-50">
-          <label>Correct Option Number (1-4)</label>
-          <input required type="number" class="form-control" name="answer" min="1" max="4">
+        <div class="row">
+          <div class="col-md-6 form-group">
+            <label>Correct Option Number (1-4)</label>
+            <input required type="number" class="form-control" name="answer" min="1" max="4">
+          </div>
+          <div class="col-md-6 form-group">
+            <label><i class="fas fa-star mr-1" style="color: #fbbf24;"></i>Marks for this Question</label>
+            <input required type="number" class="form-control" name="marks" min="1" value="1" placeholder="e.g., 1, 2, 5">
+          </div>
         </div>
         <button type="submit" class="btn-snoop mt-3">
           Submit MCQ Question <i class="fas fa-plus ml-2"></i>
@@ -160,6 +166,7 @@
                 <p class="mb-1"><strong>C)</strong> <%= String(q.op3) %></p>
                 <p class="mb-1"><strong>D)</strong> <%= String(q.op4) %></p>
                 <p class="mb-0 text-info"><strong>Answer:</strong> <%= String(q.answer) %></p>
+                <p class="mb-0" style="color: #fbbf24;"><strong>Marks:</strong> <%= q.marks || 1 %></p>
               </div>
             <% } %>
           </div>
@@ -394,6 +401,7 @@
               <p class="mb-1"><strong>C)</strong> ${q.op3}</p>
               <p class="mb-1"><strong>D)</strong> ${q.op4}</p>
               <p class="mb-0 text-info"><strong>Answer:</strong> ${q.answer}</p>
+              <p class="mb-0" style="color: #fbbf24;"><strong>Marks:</strong> ${q.marks || 1}</p>
             </div>
           `;
           

@@ -65,7 +65,16 @@ class getStudentResult(Resource):
                 'combined_score': r.get('combined_score', 0),
                 'risk_level': r.get('risk_level', 'LOW'),
                 'anomaly_data': r.get('anomaly_data', []),
-                'created_at': r.get('created_at', None)
+                'created_at': r.get('created_at', None),
+                'total_marks': r.get('total_marks', 0),
+                'mcq_total': r.get('mcq_total', 0),
+                'mcq_obtained': r.get('mcq_obtained', 0),
+                'subjective_total': r.get('subjective_total', 0),
+                'subjective_obtained': r.get('subjective_obtained', 0),
+                'percentage': r.get('percentage', 0),
+                'pass_status': r.get('pass_status', 'FAIL'),
+                'passing_marks': r.get('passing_marks', 0),
+                'question_scores': r.get('question_scores', [])
             }
             bigjson.append(jsondata)
         
@@ -100,7 +109,16 @@ class getTestResult(Resource):
                 'cheat_score': r.get('cheat_score', 0),
                 'combined_score': r.get('combined_score', 0),
                 'risk_level': r.get('risk_level', 'LOW'),
-                'anomaly_data': r.get('anomaly_data', [])
+                'anomaly_data': r.get('anomaly_data', []),
+                'total_marks': r.get('total_marks', 0),
+                'mcq_total': r.get('mcq_total', 0),
+                'mcq_obtained': r.get('mcq_obtained', 0),
+                'subjective_total': r.get('subjective_total', 0),
+                'subjective_obtained': r.get('subjective_obtained', 0),
+                'percentage': r.get('percentage', 0),
+                'pass_status': r.get('pass_status', 'FAIL'),
+                'passing_marks': r.get('passing_marks', 0),
+                'question_scores': r.get('question_scores', [])
             }
             bigjson.append(jsondata)
         
@@ -138,7 +156,16 @@ class getStudentResponse(Resource):
                 'cheat_score': r.get('cheat_score', 0),
                 'combined_score': r.get('combined_score', 0),
                 'risk_level': r.get('risk_level', 'LOW'),
-                'anomaly_data': r.get('anomaly_data', [])
+                'anomaly_data': r.get('anomaly_data', []),
+                'total_marks': r.get('total_marks', 0),
+                'mcq_total': r.get('mcq_total', 0),
+                'mcq_obtained': r.get('mcq_obtained', 0),
+                'subjective_total': r.get('subjective_total', 0),
+                'subjective_obtained': r.get('subjective_obtained', 0),
+                'percentage': r.get('percentage', 0),
+                'pass_status': r.get('pass_status', 'FAIL'),
+                'passing_marks': r.get('passing_marks', 0),
+                'question_scores': r.get('question_scores', [])
             }
             bigjson.append(jsondata)
     
@@ -174,16 +201,19 @@ class scoreAndStore(Resource):
         else:
             s_id = None # Fallback
             
-        mcq_score = 0 
-        final_score = 0
-        generated = False
+        # ===== ACCURATE WEIGHTED SCORING ENGINE =====
+        mcq_obtained = 0 
+        mcq_total = 0
+        subjective_total = 0
+        subjective_obtained = 0
         answers = []
+        question_scores = []
+        passing_marks = int(response.get("passingMarks", 0))
+        
         integrity = response.get("integrity", random.randint(1, 100))
         tab_switch_data = response.get("tabSwitchData", []) 
         fullscreen_data = response.get("fullscreenData", []) 
         action_logs = response.get("actionLogs", [])
-        # No longer random - requires manual marking or automated model
-        subjective_score = 0
         
         # Extract AI Monitoring Data
         cheat_score = float(response.get("cheatScore", 0))
@@ -196,35 +226,85 @@ class scoreAndStore(Resource):
         risk_level = calculate_risk_level(combined_score)
         
         qna = response["qna"]
-        print("--- SCORING TRACE ---")
+        print("--- SCORING TRACE (Weighted) ---")
         for q in qna:
             student_ans = str(q.get("studentAnswer", "")).strip().lower()
             actual_ans = str(q.get("actualAnswer", "")).strip().lower()
+            marks = int(q.get("marks", 1))
+            has_options = q.get("hasOptions", True)
             
-            if student_ans == actual_ans:
-                mcq_score += 1
-                print(f"  Q{q['ind']}: MATCH (Student: '{student_ans}', Actual: '{actual_ans}')")
+            if has_options:
+                # MCQ Question - auto scored
+                mcq_total += marks
+                if student_ans == actual_ans:
+                    mcq_obtained += marks
+                    question_scores.append({
+                        "ind": q['ind'],
+                        "marks": marks,
+                        "obtained": marks,
+                        "correct": True
+                    })
+                    print(f"  Q{q['ind']}: CORRECT (+{marks} marks) (Student: '{student_ans}', Actual: '{actual_ans}')")
+                else:
+                    question_scores.append({
+                        "ind": q['ind'],
+                        "marks": marks,
+                        "obtained": 0,
+                        "correct": False
+                    })
+                    print(f"  Q{q['ind']}: INCORRECT (0/{marks} marks) (Student: '{student_ans}', Actual: '{actual_ans}')")
             else:
-                print(f"  Q{q['ind']}: MISMATCH (Student: '{student_ans}', Actual: '{actual_ans}')")
+                # Subjective Question - not auto-scored, stored for manual grading
+                subjective_total += marks
+                question_scores.append({
+                    "ind": q['ind'],
+                    "marks": marks,
+                    "obtained": 0,
+                    "correct": None  # Not graded yet
+                })
+                print(f"  Q{q['ind']}: SUBJECTIVE ({marks} marks - pending manual grading)")
                 
             answers.append(q.get("studentAnswer", ""))
 
-        final_score = mcq_score
-        print(f"--- TOTALS: MCQ={mcq_score}, Final={final_score} ---")
+        total_marks = mcq_total + subjective_total
+        final_score = mcq_obtained + subjective_obtained
+        percentage = round((final_score / total_marks) * 100, 2) if total_marks > 0 else 0
+        
+        # Pass/Fail determination based on teacher-set threshold
+        pass_status = "PASS" if final_score >= passing_marks else "FAIL"
+        
+        print(f"--- TOTALS ---")
+        print(f"  MCQ: {mcq_obtained}/{mcq_total}")
+        print(f"  Subjective: {subjective_obtained}/{subjective_total}")
+        print(f"  Total: {final_score}/{total_marks}")
+        print(f"  Percentage: {percentage}%")
+        print(f"  Passing Marks: {passing_marks}")
+        print(f"  Status: {pass_status}")
         
         jsondata = {
                 'student_id': int(s_id) if s_id and s_id != 0 else None,  # Can be NULL
                 'email': email,
                 'test_id': str(t_id),  # Explicitly ensure TEXT type
-                'mcq_score': int(mcq_score),
+                'mcq_score': int(mcq_obtained),  # Legacy column - now same as mcq_obtained
                 'final_score': int(final_score),
-                'generated': bool(generated),
+                'generated': False,
                 'answers': answers,
                 'integrity': int(integrity),
                 'tab_switch_data': tab_switch_data,
                 'fullscreen_data': fullscreen_data, 
                 'action_logs': action_logs,
-                'subjective_score': int(subjective_score),
+                'subjective_score': int(subjective_obtained),
+                # New accurate scoring columns
+                'total_marks': int(total_marks),
+                'mcq_total': int(mcq_total),
+                'mcq_obtained': int(mcq_obtained),
+                'subjective_total': int(subjective_total),
+                'subjective_obtained': int(subjective_obtained),
+                'percentage': float(percentage),
+                'pass_status': str(pass_status),
+                'passing_marks': int(passing_marks),
+                'question_scores': question_scores,
+                # AI monitoring columns
                 'monitoring_enabled': bool(monitoring_enabled),
                 'cheat_score': float(cheat_score),
                 'combined_score': float(combined_score),
@@ -238,6 +318,7 @@ class scoreAndStore(Resource):
         print(result)
         
         print(f"[Suite] Test {t_id} - Student {email}")
+        print(f"  Score: {final_score}/{total_marks} ({percentage}%) - {pass_status}")
         print(f"  Integrity: {integrity}, Cheat Score: {cheat_score}, Combined: {combined_score}")
         print(f"  Risk Level: {risk_level}, Monitoring: {monitoring_enabled}")
 

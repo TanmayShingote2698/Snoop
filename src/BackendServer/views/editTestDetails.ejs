@@ -41,6 +41,12 @@
           <input name="warningThreshold" type="number" class="form-control" value="<%= test.warningThreshold %>" required>
         </div>
 
+        <div class="form-group mb-4">
+          <label><i class="fas fa-check-double mr-2"></i>Passing Marks</label>
+          <input name="passingMarks" type="number" class="form-control" value="<%= test.passingMarks || 0 %>" min="0" required>
+          <small class="text-dim">Students scoring at or above this will be marked as PASS.</small>
+        </div>
+
         <div class="d-flex justify-content-between">
            <a href="/teacher/showAllTests" class="btn btn-outline-light rounded-pill px-4">Cancel</a>
            <button type="submit" class="btn-snoop px-5">

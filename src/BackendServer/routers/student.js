@@ -569,6 +569,7 @@ router.post('/submitTest', (req, res) => {
   let responseOfStudent = {};
   responseOfStudent.testID = testID;
   responseOfStudent.studentEmail = req.body.email;
+  responseOfStudent.passingMarks = parseInt(test.passingMarks) || 0;
   let qna = [];
   for (let i = 0; i < test.questions.length; i++) {
     let q = test.questions[i];
@@ -588,7 +589,9 @@ router.post('/submitTest', (req, res) => {
     let obj = {
       ind: q.ind,
       studentAnswer: req.body[q_id] || "",
-      actualAnswer: actualAns
+      actualAnswer: actualAns,
+      marks: parseInt(q.marks) || 1,
+      hasOptions: q.op1 ? true : false
     };
     qna.push(obj);
   }
@@ -641,6 +644,7 @@ router.post('/submitTest', (req, res) => {
         "testID": responseOfStudent.testID,
         "studentEmail": responseOfStudent.studentEmail,
         "qna": responseOfStudent.qna,
+        "passingMarks": responseOfStudent.passingMarks,
         "integrity": integrityScore,
         "cheatScore": aiCheatScore,
         "combinedCheatScore": combinedCheatScore,

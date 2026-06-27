@@ -34,23 +34,46 @@
                     </div>
 
                     <div class="row text-center mt-4">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
-                                <p class="small text-dim mb-1">Final Score</p>
+                                <p class="small text-dim mb-1">Score</p>
                                 <h3 class="font-weight-bold" style="color: var(--secondary);">
-                                    <%= results[i].mcq_score %>
+                                    <% if (results[i].total_marks && results[i].total_marks > 0) { %>
+                                        <%= results[i].mcq_obtained || results[i].mcq_score %> / <%= results[i].total_marks %>
+                                    <% } else { %>
+                                        <%= results[i].mcq_score %>
+                                    <% } %>
                                 </h3>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
-                                <p class="small text-dim mb-1">Maximum Possible</p>
-                                <h3 class="font-weight-bold">
-                                    <%= allTests.find(t => t.id == results[i].test_id)?.questions?.length || '-' %>
+                                <p class="small text-dim mb-1">Percentage</p>
+                                <h3 class="font-weight-bold" 
+                                    style="color: <%= results[i].percentage >= 75 ? '#10b981' : results[i].percentage >= 40 ? '#fbbf24' : '#ef4444' %>;">
+                                    <% if (results[i].percentage != null && results[i].percentage > 0) { %>
+                                        <%= results[i].percentage %>%
+                                    <% } else { %>
+                                        -
+                                    <% } %>
                                 </h3>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
+                                <p class="small text-dim mb-1">Status</p>
+                                <h3 class="font-weight-bold">
+                                    <% if (results[i].pass_status && results[i].total_marks > 0) { %>
+                                        <span class="badge badge-pill px-3 py-2" style="font-size: 0.9rem; background: <%= results[i].pass_status === 'PASS' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)' %>; color: <%= results[i].pass_status === 'PASS' ? '#10b981' : '#ef4444' %>; border: 1px solid <%= results[i].pass_status === 'PASS' ? '#10b981' : '#ef4444' %>;">
+                                            <i class="fas <%= results[i].pass_status === 'PASS' ? 'fa-check-circle' : 'fa-times-circle' %> mr-1"></i><%= results[i].pass_status %>
+                                        </span>
+                                    <% } else { %>
+                                        <span class="text-dim">-</span>
+                                    <% } %>
+                                </h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
                             <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03);">
                                 <p class="small text-dim mb-1">Integrity</p>
                                 <h3 class="font-weight-bold"

@@ -131,6 +131,7 @@ router.post("/submitQues", async (req, res) => {
                     op3: String(req.body.op3 || ''),
                     op4: String(req.body.op4 || ''),
                     answer: String(req.body.answer || ''),
+                    marks: parseInt(req.body.marks) || 1,
                     type: 'mcq',
                     ind: test.questions.length + 1
                 };
@@ -203,8 +204,10 @@ router.post("/submitQuestionsBatch", checkAuthenticated, async (req, res) => {
             questionObj.op3 = safeString(q.op3);
             questionObj.op4 = safeString(q.op4);
             questionObj.answer = safeString(q.answer);
+            questionObj.marks = parseInt(q.marks) || 1;
         } else {
             questionObj.answer = safeString(q.answer);
+            questionObj.marks = parseInt(q.marks) || 1;
         }
 
         test.questions.push(questionObj);
@@ -313,6 +316,7 @@ router.post("/takeTestID", async (req, res) => {
     test.startTime = req.body.startTime || test.startTime || '';
     test.endTime = req.body.endTime || test.endTime || '';
     test.accessCode = req.body.accessCode || test.accessCode || '';
+    test.passingMarks = parseInt(req.body.passingMarks) || test.passingMarks || 0;
 
 
     res.render("createTest2", {
