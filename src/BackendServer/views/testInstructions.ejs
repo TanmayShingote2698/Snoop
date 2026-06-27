@@ -60,6 +60,10 @@
                                     monitors will flag your session for suspicious activity.</span>
                             </li>
                             <li class="mb-3 d-flex align-items-start">
+                                <i class="fas fa-desktop mr-3 mt-1 text-primary"></i>
+                                <span><strong>Screen Sharing:</strong> You must share your <strong>Entire Screen</strong>. This allows the AI to verify your environment and detect unauthorized windows.</span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-start">
                                 <i class="fas fa-user-friends mr-3 mt-1 text-primary"></i>
                                 <span><strong>Single User:</strong> Only the registered student should be visible.
                                     Detection of extra people will result in a warning.</span>
@@ -73,10 +77,10 @@
                                 <i class="fas fa-ban mr-3 mt-1 text-danger"></i>
                                 <span class="text-danger"><strong>Strict Prohibitions:</strong>
                                     <ul class="pl-3 mt-2 mb-0">
-                                        <li>No Tab Switching (Auto-flagged)</li>
+                                        <li>No Tab Switching (Captured with Screen Snapshots)</li>
                                         <li>No Copy/Paste (Ctrl+C, Ctrl+V Disabled)</li>
                                         <li>No Right-Click Context Menu</li>
-                                        <li>No Exiting Fullscreen Mode</li>
+                                        <li>No Exiting Fullscreen (Captured with Screen Snapshots)</li>
                                         <li>No Mobile Phones allowed</li>
                                         <li>Microphone must remain unmutes</li>
                                     </ul>
@@ -89,7 +93,7 @@
                         <div class="custom-control custom-checkbox">
                             <input type="checkbox" class="custom-control-input" id="consentCheck" onchange="toggleProceed()">
                             <label class="custom-control-label" for="consentCheck">
-                                I have read and understood all the instructions. I agree to share my camera and microphone access for proctoring purposes and will adhere to the code of conduct.
+                                I have read and understood all the instructions. I agree to share my camera, microphone, and <strong>entire screen</strong> for proctoring purposes and will adhere to the code of conduct.
                             </label>
                         </div>
                     </div>

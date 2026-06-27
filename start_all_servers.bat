@@ -25,7 +25,7 @@ timeout /t 2 /nobreak >nul
 
 :: Start AI Monitor Server (Process Monitor)
 echo [4/5] Starting AI Monitor Server...
-start "AI Monitor Server" cmd /k "cd /d %PROJECT_ROOT%src\AIMonitor && python server.py"
+start "AI Monitor Server" cmd /k "cd /d %PROJECT_ROOT%src\AIMonitor && venv310\Scripts\python.exe server.py"
 timeout /t 2 /nobreak >nul
 
 :: Start Backend Server (Port 5000)
