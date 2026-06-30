@@ -916,18 +916,18 @@
         console.log("[ANOMALY DETECTED]", anomaly);
         updateHiddenInput(); // Sync hidden form field
         
-        // Alert for critical anomalies
-        if (anomaly.type.includes('phone') || anomaly.type.includes('multiple_persons')) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Anomaly Detected!',
-                text: `${anomaly.type}: This has been recorded.`,
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                showConfirmButton: false
-            });
-        }
+        // Alert for anomalies
+        let formattedType = anomaly.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        Swal.fire({
+            icon: 'warning',
+            title: 'Suspicious Activity Detected!',
+            text: `${formattedType} detected. This incident has been recorded.`,
+            timer: 3000,
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            backdrop: `rgba(0,0,123,0.4)`
+        });
     }
 
     function updateMonitoringStatus(message, state) {
