@@ -80,44 +80,16 @@ class AITestGenerator {
     const totalTokens = totalQuestionTokens + overhead;
     // Ensure minimum and maximum boundaries
     const minTokens = 2000;
-    const maxTokens = 8000;
+    const maxTokens = 4000;
     const final = Math.max(minTokens, Math.min(maxTokens, totalTokens));
     return final;
   }
   buildPrompt(requirements) {
     const { subject, topic, numberOfQuestions, difficultyLevel, questionTypes, additionalInstructions } = requirements;
-    return `You must generate EXACTLY ${numberOfQuestions} exam questions for ${subject} - ${topic} at ${difficultyLevel} difficulty level.
-Question Types Required: ${questionTypes.join(', ')}
-IMPORTANT: Return ONLY a JSON array with NO markdown, NO explanation before/after, just the pure JSON array.
-The array MUST contain exactly ${numberOfQuestions} question objects.
-Example format for a JSON array with 2 questions:
-[
-  {
-    "ind": 1,
-    "question": "First question text?",
-    "type": "mcq",
-    "op1": "Option A",
-    "op2": "Option B",
-    "op3": "Option C",
-    "op4": "Option D",
-    "answer": "Option B",
-    "explanation": "Explanation here"
-  },
-  {
-    "ind": 2,
-    "question": "Second question text?",
-    "type": "mcq",
-    "op1": "Option A",
-    "op2": "Option B",
-    "op3": "Option C",
-    "op4": "Option D",
-    "answer": "Option A",
-    "explanation": "Explanation here"
-  }
-]
-Now generate exactly ${numberOfQuestions} questions following this exact format.
-Special Instructions: ${additionalInstructions || 'None'}
-Reminder: You MUST return a JSON array with ${numberOfQuestions} objects. Each object must have all fields.`;
+    return `Generate ${numberOfQuestions} ${difficultyLevel} ${subject} questions on "${topic}".
+Types: ${questionTypes.join(', ')}
+Return ONLY a JSON array, no markdown. Each object: {"ind":N,"question":"...","type":"mcq","op1":"A","op2":"B","op3":"C","op4":"D","answer":"B","explanation":"..."}
+${additionalInstructions ? 'Instructions: ' + additionalInstructions : ''}`;
   }
   async callOllama(prompt) {
     try {
